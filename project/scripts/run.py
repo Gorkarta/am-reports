@@ -16,7 +16,7 @@ async def main():
     pg.on('console', lambda m: print('CONSOLE', m.text) if m.type=='error' else None)
     await pg.goto('file://'+S+'gen.html')
     await pg.click('#navPlanFact')
-    await pg.set_input_files('#pfSalesFile', ZIP)
+    await pg.set_input_files('#pfSalesFile', ZIP, timeout=300000)
     await pg.wait_for_function("!document.getElementById('pfEventSel').disabled", timeout=240000)
     opts=await pg.eval_on_selector_all('#pfEventSel option','os=>os.map(o=>[o.value,o.textContent])')
     val=[o for o in opts if WORD in o[1]]
