@@ -4,7 +4,7 @@ def ld(D):
     t=pd.read_csv(D+'tickets.csv',dtype=str,usecols=['id','order_id','seat_id','performance_id','price','deleted','is_invite','created_at','updated_at'])
     o=pd.read_csv(D+'orders.csv',dtype=str,usecols=['id','status','viewer_id','sold_at'])
     t=t[t.performance_id==P].merge(o,left_on='order_id',right_on='id',how='left',suffixes=('','_o'));return t
-A=ld('../w/prev/');B=ld('../w/cur/')
+A=ld('../prev/');B=ld('../cur/')
 def ret(t):return t[(t.deleted=='t')&(t.is_invite!='t')&t.sold_at.notna()]
 def inv(t):return t[(t.is_invite=='t')&(t.deleted!='t')]
 print('returns prev',len(ret(A)),'cur',len(ret(B)),'new',len(set(ret(B).id)-set(ret(A).id)),'sum new ret price',pd.to_numeric(ret(B)[~ret(B).id.isin(ret(A).id)].price).sum())
