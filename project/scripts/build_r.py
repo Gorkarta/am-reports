@@ -145,8 +145,8 @@ for w in W+[['Итого',real,PLAN_N,T['r'],PLAN_R]]:
   wit+=f"<div class=it><div><div class=a>{w[0]}</div><div class=sm>{rv}</div></div><div class=rt><b>{w[1]}</b> <span class=sm>из {n(w[2])}</span>{tv}</div></div>"
 for _p in json.load(open(C['svodka'])): pg(1,_p)
 pg(1,f"""<h3 style='margin-top:0'>{C.get('weeks_title','Темп по неделям')}</h3>
-<div class=card><div class=t>{C.get('weeks_cap','Билетов за неделю: факт и план')}</div>{wbars()}<div class=lg><i style="background:#5b8def"></i>План<i style="background:#ffb238"></i>Факт{('<i style="background:#34d399"></i>План-минимум' if MINT else '')}</div></div>
-<div class=list style='margin-top:8px'>{wit}</div><div class=foot style='margin-top:8px'>{C['weeks_foot']}</div>""")
+<div class=card><div class=t>{C.get('weeks_cap','Билетов за неделю: факт и план')}</div>{wbars(115 if len(W)>5 else 170)}<div class=lg><i style="background:#5b8def"></i>План<i style="background:#ffb238"></i>Факт{('<i style="background:#34d399"></i>План-минимум' if MINT else '')}</div></div>
+<style>#wk .it{{padding:4px 12px}}</style><div class=list id=wk style='margin-top:8px'>{wit}</div><div class=foot style='margin-top:8px'>{C['weeks_foot']}</div>""")
 pg(1,f"""<h3 style='margin-top:0'>Продажи по дням</h3>
 <div class=card><div class=t>Билетов в день, {C['days_caption']}</div>{daily('n')}</div>
 <div class=card style="margin-top:10px"><div class=t>Выручка в день, тыс. ₽</div>{daily('r',1000)}<div class=lg><i style="background:#8b5cf6"></i>{C['partial_day']}</div></div>
