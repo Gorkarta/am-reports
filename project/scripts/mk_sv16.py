@@ -1,0 +1,34 @@
+import json,datetime as dt
+TODAY=dt.date(2026,10,20)
+c101=json.load(open('curve101.json'));c61=json.load(open('curve61.json'));c76=json.load(open('curve76.json'))
+share=lambda c,W,ev,day:c[str((ev-day).days)] if (ev-day).days<=W else 0
+out={}
+PN=share(c101,101,dt.date(2026,12,26),TODAY)*7000;PR=PN*60e6/7000
+SM=dict(min_t=5830,min_r=50000000,prev="../prev/",cur="../cur/",data="data85.json",prev_data="data85_prev.json",perf=85,GT=7000,GR=60000000,
+ exp_date="20.10.2026",last_dm_hm="20.10 00:29",days_left=67,inv=322,ret=21,plan_n=PN,plan_r=round(PR),
+ period_sv="19.10 08:27 → 20.10 00:29",sv_bs_when="последнее — 05.10 17:08",
+ sv_bs_rows=[["Цены и места","без изменений","—"],["Выведено мест","без изменений","3 187"],["Снято с продажи","без изменений","109"],["Пригласительные вне групп","без изменений","322"]],
+ sv_title="Сводка — Стас Михайлов, выгрузка 20.10.2026",out_pdf="out/Сводка — Стас Михайлов, выгрузка 20.10.2026.pdf",out_pages="svodka_pages_85.json",
+ out_html="svodka_85.html",out_png="svodka_85.png",event_line="Стас Михайлов, 26.12.2026, Live Арена, Основной зал, id 85",artist="Стас Михайлов",
+ inv_line="Новых пригласительных за период нет (всего 322). Возврат за период: 1 билет на 14 000 ₽ (всего 21).")
+GTz=707;GRz=1700000
+PNz=share(c61,61,dt.date(2026,10,29),TODAY)*GTz;PRz=PNz*GRz/GTz
+SZ=dict(prev="../prev/",cur="../cur/",data="data78.json",prev_data="data78_prev.json",perf=78,GT=GTz,GR=GRz,
+ exp_date="20.10.2026",last_dm_hm="19.10 21:39",days_left=9,inv=341,ret=51,plan_n=PNz,plan_r=round(PRz),
+ period_sv="18.10 00:18 → 19.10 21:39",sv_bs_when="изменений нет",
+ sv_bs_rows=[["Цены и места","без изменений","—"],["Выведено мест","без изменений","446"]],
+ quota_note="Квота: в продаже только часть мероприятия",
+ sv_title="Сводка — Жара Медиа Премия 2026, выгрузка 20.10.2026",out_pdf="out/Сводка — Жара Медиа Премия 2026, выгрузка 20.10.2026.pdf",out_pages="svodka_pages_78.json",
+ out_html="svodka_78.html",out_png="svodka_78.png",event_line="Жара Медиа Премия 2026, 29.10.2026, Live Арена, Основной зал, id 78",artist="Жара Медиа Премия 2026",
+ inv_line="Новых пригласительных и возвратов за период нет (пригласительных 341, возвратов 51). Действующий план 707 / 1 700 000 ₽ (Методика, п. 2.9).")
+GTb=10847;GRb=59914000
+PNb=share(c76,76,dt.date(2026,11,24),TODAY)*GTb;PRb=PNb*GRb/GTb
+SB=dict(prev="../prev/",cur="../cur/",data="data83.json",prev_data="data83_prev.json",perf=83,GT=GTb,GR=GRb,
+ exp_date="20.10.2026",last_dm_hm="20.10 00:34",days_left=35,inv=296,ret=325,plan_n=PNb,plan_r=round(PRb),
+ period_sv="19.10 04:23 → 20.10 00:34",sv_bs_when="изменений нет",
+ sv_bs_rows=[["Цены и места","без изменений","—"],["Выведено мест","без изменений","9 829"]],
+ sv_title="Сводка — Blok3, выгрузка 20.10.2026",out_pdf="out/Сводка — Blok3, выгрузка 20.10.2026.pdf",out_pages="svodka_pages_83.json",
+ out_html="svodka_83.html",out_png="svodka_83.png",event_line="Blok3, 24.11.2026, Live Арена, Основной зал, id 83",artist="Blok3",
+ inv_line="Новых пригласительных за период нет (всего 296); действующий план 10 847 / 59 914 000 ₽ (Методика, п. 2.9). Возвраты за период: 2 билета на 13 000 ₽ (всего 325).")
+for nm,o in (('svcfg_85',SM),('svcfg_78',SZ),('svcfg_83',SB)):json.dump(o,open(nm+'.json','w'),ensure_ascii=False,indent=1)
+print('PN85',PN,PR,'PN78',PNz,PRz,'PN83',PNb,PRb)
