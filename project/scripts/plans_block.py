@@ -8,8 +8,13 @@ def mlnp(v,dec=1,keep=False):
     s=f"{v/1e6:.{dec}f}".replace('.',',')
     if s.endswith(',0') and not keep:s=s[:-2]
     return s+' млн ₽'
-def cards(real,PN,rev,PR,MINT,MINR,GT,GR,sub_t,sub_r=''):
-    t=(f"<div class=k><div class=l>Реализовано билетов</div><div class=v>{n_(real)}</div><div class=s>{dev(real/PN-1)} от <nobr>план‑прогноза {n_(PN)}</nobr><br>"
+def cards(real,PN,rev,PR,MINT,MINR,GT,GR,sub_t,sub_r='',sold=None,inv='',ret=0):
+    if sold is not None:  # с 21.10.2026: крупно «Продано билетов», реализовано — справочно (Инструкция п. 7.2.1.1)
+        t=(f"<div class=k><div class=l>Продано билетов</div><div class=v style='font-size:30px;margin:6px 0 4px'>{n_(sold)}</div>"
+           f"<div class=s><span class=sub>реализовано {n_(real)} (+{inv} пригл. −{ret} возвраты)</span><br><br>"
+           f"{dev(real/PN-1)} от <nobr>прогноза {n_(PN)}</nobr><br><b>{pct1(real/MINT)}</b> от <nobr>минплана {n_(MINT)}</nobr><br><b>{pct1(real/GT)}</b> от <nobr>цели {n_(GT)}</nobr></div></div>")
+    else:
+      t=(f"<div class=k><div class=l>Реализовано билетов</div><div class=v>{n_(real)}</div><div class=s>{dev(real/PN-1)} от <nobr>план‑прогноза {n_(PN)}</nobr><br>"
        f"<b>{pct1(real/MINT)}</b> от <nobr>минплана {n_(MINT)}</nobr><br><b>{pct1(real/GT)}</b> от <nobr>цели {n_(GT)}</nobr><br><span class=sub>{sub_t}</span></div></div>")
     r=(f"<div class=k><div class=l>Выручка</div><div class=v>{(f'{rev/1e6:.2f}').replace('.',',')} млн ₽</div><div class=s>{dev(rev/PR-1)} от <nobr>план‑прогноза {mlnp(PR)}</nobr><br>"
        f"<b>{pct1(rev/MINR)}</b> от <nobr>минплана {mlnp(MINR)}</nobr><br><b>{pct1(rev/GR)}</b> от <nobr>цели {mlnp(GR)}</nobr>{('<br><span class=sub>'+sub_r+'</span>') if sub_r else ''}</div></div>")

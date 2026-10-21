@@ -194,7 +194,7 @@ path=""
 MINT=C.get('min_t');MINR=C.get('min_r')
 if PN and MINT and MINR and GT and GR:
     import plans_block as PB
-    k1,k2=PB.cards(real,int(PN+0.5),T['r'],PR,MINT,MINR,GT,GR,f"продано {n_(T['n']+RET)} · пригл. {INV}<br>"+(('возвраты −'+str(RET)) if RET else 'возвратов нет'))
+    k1,k2=PB.cards(real,int(PN+0.5),T['r'],PR,MINT,MINR,GT,GR,f"продано {n_(T['n']+RET)} · пригл. {INV}<br>"+(('возвраты −'+str(RET)) if RET else 'возвратов нет'),sold=T['n']+RET,inv=f"{INV}{C.get('inv_extra','')}",ret=RET)
     path=PB.path(real,T['r'],MINT,MINR,GT,GR)
 elif GT and GR:
     path=f"""<div class=card style='margin-top:8px'><div class=t>Путь к цели: {n_(GT)} билетов, {(str(GR//1000000) if GR%1000000==0 else pc_(GR/1e6))} млн ₽</div>
