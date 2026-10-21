@@ -175,7 +175,8 @@ pg(2,f"""{banner(2,'Новости и изменения',C['period'])}
 <div class=stat><div class=k><div class=l>Билетов</div><div class=v>+{N_['n']}</div></div><div class=k><div class=l>Выручка</div><div class=v>+{n(N_['r']/1000)} тыс.</div></div><div class=k><div class=l>Заказов</div><div class=v>{N_['orders']}</div></div></div>
 <h3>Где продавалось</h3>{lst([nl])}
 <h3>Всплески и события</h3>{bul(EV[:ES])}""")
-if EV[ES:]: pg(2,f"""<h3 style='margin-top:0'>Всплески и события (продолжение)</h3>{bul(EV[ES:])}""")
+_re=EV[ES:];_ec=C.get('ev_chunk',4)
+for _i in range(0,len(_re),_ec): pg(2,f"""<h3 style='margin-top:0'>Всплески и события (продолжение)</h3>{bul(_re[_i:_i+_ec])}""")
 pg(2,f"""<h3 style='margin-top:0'>Переоценка и вывод в продажу</h3><div class=meta style="margin:-4px 0 8px">{C['change_when']}</div>{lst([it or "<div class=it><div class=a>Цены и состав мест в продаже без изменений</div></div>"])}""")
 pg(2,f"""<h3 style='margin-top:0'>Что это изменило</h3>{bul(C['changed'])}
 <div class=call><b>Без изменений:</b> {C['unchanged']}</div><div class=foot>{C['news_foot']}</div>""")
@@ -199,7 +200,11 @@ elif chunks:
   pg(3,f"""<h3 style='margin-top:0'>Возможности</h3>{bul(C['opps'])}""")
 else:
   pg(3,f"""<h3 style='margin-top:0'>Держать</h3>{bul(C['hold'])}<h3>Снизить</h3>{bul(C['lower'])}<h3>Возможности</h3>{bul(C['opps'])}""")
-pg(3,f"""<h3 style='margin-top:0'>Слабые места</h3>{bul(C['weak'])}<h3>На что обратить внимание</h3>{bul(C['attn'])}
+if C.get('attn_sep'):
+  pg(3,f"""<h3 style='margin-top:0'>Слабые места</h3>{bul(C['weak'])}""")
+  pg(3,f"""<h3 style='margin-top:0'>На что обратить внимание</h3>{bul(C['attn'])}\n<div class=foot>Результат — предложение: цены утверждает менеджер и вносит в БС вручную.</div>""")
+else:
+  pg(3,f"""<h3 style='margin-top:0'>Слабые места</h3>{bul(C['weak'])}<h3>На что обратить внимание</h3>{bul(C['attn'])}
 <div class=foot>Результат — предложение: цены утверждает менеджер и вносит в БС вручную.</div>""")
 pg(3,f"""<h3 style='margin-top:0'>Применение методики</h3>{bul(C.get('method',[]))}""")
 pages=P[1]+P[2]+P[3]; NN=len(pages)

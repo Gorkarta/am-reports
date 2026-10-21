@@ -210,7 +210,7 @@ retrev=rn.price.astype(float).sum() if len(rn) else 0
 revsub=(f"возвраты −{n_(retrev)} ₽ ({len(rn)} бил.)" if len(rn) else "₽")
 chg=f"""<div class=sh style='margin-top:0'>Что изменилось <span>{C['period_sv']}</span></div>
 <div class=kpis style='margin-top:0;grid-template-columns:1fr 1fr 1fr'>
-<div class=k style='padding:9px'><div class=l>Билетов</div><div class=v style='font-size:18px'>+{len(N)}</div><div class=s>{orders.shape[0]} {('заказ' if orders.shape[0]%10==1 and orders.shape[0]%100!=11 else ('заказа' if 2<=orders.shape[0]%10<=4 and not 12<=orders.shape[0]%100<=14 else 'заказов'))}</div></div>
+<div class=k style='padding:9px'><div class=l>Билетов</div><div class=v style='font-size:18px'>+{len(N)}</div><div class=s>{N.order_id.nunique()} {('заказ' if N.order_id.nunique()%10==1 and N.order_id.nunique()%100!=11 else ('заказа' if 2<=N.order_id.nunique()%10<=4 and not 12<=N.order_id.nunique()%100<=14 else 'заказов'))}</div></div>
 <div class=k style='padding:9px'><div class=l>Выручка</div><div class=v style='font-size:18px'>+{n_(N.price.sum())}</div><div class=s>{revsub}</div></div>
 <div class=k style='padding:9px'><div class=l style='letter-spacing:0;white-space:nowrap'>Ср. цена продаж</div><div class=v style='font-size:18px'>{sg(avg1/avg0-1)}</div><div class=s>{n_(avg0)} → {n_(avg1)}</div></div></div>
 <div style='height:10px'></div>"""
