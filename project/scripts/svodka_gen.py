@@ -203,7 +203,7 @@ elif GT and GR:
 itogo=f"""<div class=sh>Итого на {C['exp_date'][:5]}</div>
 <div class=kpis style='margin-top:0'>
 {k1}{k2}{k3}
-<div class=k><div class=l>Доступно к покупке</div><div class=v>{n_(AU['n'])}</div><div class=s><span style='color:#ffb238;font-weight:600'>ср. цена {n_(AU['avg'])} ₽</span><br><span class=sub>{AUCH}</span></div></div></div>
+<div class=k><div class=l>Доступно к покупке</div><div class=v>{n_(AU['n'])} {'билет' if AU['n']%10==1 and AU['n']%100!=11 else ('билета' if 2<=AU['n']%10<=4 and not 12<=AU['n']%100<=14 else 'билетов')}</div><div class=s><span style='color:#ffb238;font-weight:600'>ср. цена {n_(AU['avg'])} ₽</span><br><span class=sub>{AUCH}</span></div></div></div>
 {path}"""
 avg0=dp['total']['avg'];avg1=T['avg']
 retrev=rn.price.astype(float).sum() if len(rn) else 0
