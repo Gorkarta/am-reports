@@ -77,6 +77,15 @@ d['export_cur'] = a.cur_time
 json.dump(d, open(os.path.join(data_dir, 'channels.json'), 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 built['channels.json'] = a.cur_time
 
+# ---- Анализ продажи билетов (Д3) ----
+ev_out = os.path.join(work, 'events.json')
+c, l = run('build_events.py', cur_dir, ev_out, a.cur_time)
+print(l[-1200:])
+if c != 0:
+    sys.exit('build_events.py завершился с ошибкой:\n' + l[-3000:])
+shutil.copy(ev_out, os.path.join(data_dir, 'events.json'))
+built['events.json'] = a.cur_time
+
 # ---- meta.json и архив по дате ----
 meta_path = os.path.join(data_dir, 'meta.json')
 meta = json.load(open(meta_path, encoding='utf-8')) if os.path.exists(meta_path) else {}
