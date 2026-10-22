@@ -54,7 +54,8 @@ function draw(){const el=document.getElementById('map');el.innerHTML='';const W=
   d.innerHTML=`<b>${e.short}</b><span class=n>${e.sold.toLocaleString('ru')}</span><em>${e.dt} · ${txt}</em>`;
   d.onmousemove=ev=>{const t=document.getElementById('tip');t.className='';t.style.display='block';t.style.left=Math.min(ev.clientX+14,innerWidth-260)+'px';t.style.top=ev.clientY+14+'px';t.innerHTML=`<b>${e.name}</b><br>${e.dt}.2026 · через ${e.days_left} дн.<br>Реализовано ${e.sold} бил. · ${(e.rev/1e6).toFixed(2)} млн ₽<br>За период: ${e.new_n>0?'+':''}${e.new_n} бил.<br>7 дн.: ${e.w7} (пред. ${e.pw7})<br>${txt}`};d.onmouseleave=()=>document.getElementById('tip').style.display='none';el.appendChild(d)})}
 function setMode(m){mode=m;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));document.getElementById('lg').innerHTML=`<span>Красный — плохо: ${MODES[m].lo}</span><span style="width:220px;height:10px;border-radius:5px;background:linear-gradient(90deg,${sc(-1)},#2d2a3b,${sc(1)})"></span><span>Зелёный — хорошо: ${MODES[m].hi}</span>`;draw()}
-document.getElementById('tabs').innerHTML=Object.entries(MODES).map(([k,v])=>`<button data-m=${k} onclick="setMode('${k}')">${v.name}</button>`).join('');
+document.getElementById('tabs').innerHTML=Object.entries(MODES).map(([k,v])=>`<button data-m=${k}>${v.name}</button>`).join('');
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.m)));
 document.getElementById('zero').textContent={{ZERO}};
 addEventListener('resize',draw);setMode('dyn');
 (function(){const T=document.getElementById('tip');let pin=null;
