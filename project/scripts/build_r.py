@@ -115,7 +115,7 @@ cap=d['cap']; sold=T['n']; INV=C.get('inv',0); RET=C.get('ret',0); real=sold+INV
 import plans_block as PB
 MINT,MINR=C.get('min_t'),C.get('min_r')
 if MINT:
-  KP1,KP2=PB.cards(real,int(round(PLAN_N)),T['r'],PLAN_R,MINT,MINR,GT,GR,f"продано {n(sold+RET)} · пригл. {INV}<br>"+(('возвраты −'+str(RET)) if RET else 'возвратов нет'),sold=sold+RET,inv=INV,ret=RET)
+  KP1,KP2=PB.cards(real,int(round(PLAN_N)),T['r'],PLAN_R,MINT,MINR,GT,GR,f"продано {n(sold+RET)} · пригл. {INV}<br>"+(('возвраты −'+str(RET)) if RET else 'возвратов нет'),sold=sold,inv=INV,ret=RET)
   PATH=PB.path(real,T['r'],MINT,MINR,GT,GR)
 pg(1,f"""<div class=brand>Аренамастер · Аналитика</div>
 <h1>Отчёт и рекомендации — {ART}</h1>

@@ -188,7 +188,7 @@ if PN:
     k1=f"<div class=k><div class=l>Реализовано билетов</div><div class=v>{n_(real)}</div><div class=s>план-прогноз на сегодня {n_(int(PN+0.5))} · <span class={cl(real/PN-1)}>{sg(real/PN-1)}</span><br><span class=sub>продано {n_(T['n']+RET)} · пригл. {INV}<br>{('возвраты −'+str(RET)) if RET else 'возвратов нет'}</span></div></div>"
     k2=f"<div class=k><div class=l>Выручка</div><div class=v>{mln(T['r'])} ₽</div><div class=s>план-прогноз на сегодня {mln1(PR)} · <span class={cl(T['r']/PR-1)}>{sg(T['r']/PR-1)}</span></div></div>"
 else:
-    k1=f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(T['n']+RET)}</div><div class=s><span class=sub>реализовано {n_(real)} (+{INV}{C.get('inv_extra','')} пригл. −{RET} возвраты)</span><br><br>плана нет (базовая выгрузка)</div></div>"
+    k1=f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(T['n'])}</div><div class=s><span class=sub>реализовано {n_(real)} (+{INV}{C.get('inv_extra','')} пригл.)<br>возвраты {RET}</span><br><br>плана нет (базовая выгрузка)</div></div>"
     k2=f"<div class=k><div class=l>Выручка</div><div class=v>{mln(T['r'])} ₽</div><div class=s>цель по выручке не задана<br><span class=sub>возвраты −{n_(RB.price.astype(float).sum())} ₽ ({RET} бил.)</span></div></div>"
 k3=(f"<div class=k><div class=l>Ср. цена продаж</div><div class=v>{n_(T['avg'])} ₽</div><div class=s>нужна {n_(NEED)} · <span class={cl(T['avg']/NEED-1)}>{sg(T['avg']/NEED-1)}</span></div></div>" if NEED else
     f"<div class=k><div class=l>Ср. цена продаж</div><div class=v>{n_(T['avg'])} ₽</div><div class=s>нужная не задана</div></div>")
@@ -196,7 +196,7 @@ path=""
 MINT=C.get('min_t');MINR=C.get('min_r')
 if PN and MINT and MINR and GT and GR:
     import plans_block as PB
-    k1,k2=PB.cards(real,int(PN+0.5),T['r'],PR,MINT,MINR,GT,GR,f"продано {n_(T['n']+RET)} · пригл. {INV}<br>"+(('возвраты −'+str(RET)) if RET else 'возвратов нет'),sold=T['n']+RET,inv=f"{INV}{C.get('inv_extra','')}",ret=RET)
+    k1,k2=PB.cards(real,int(PN+0.5),T['r'],PR,MINT,MINR,GT,GR,f"продано {n_(T['n']+RET)} · пригл. {INV}<br>"+(('возвраты −'+str(RET)) if RET else 'возвратов нет'),sold=T['n'],inv=f"{INV}{C.get('inv_extra','')}",ret=RET)
     path=PB.path(real,T['r'],MINT,MINR,GT,GR)
 elif GT and GR:
     path=f"""<div class=card style='margin-top:8px'><div class=t>Путь к цели: {n_(GT)} билетов, {(str(GR//1000000) if GR%1000000==0 else pc_(GR/1e6))} млн ₽</div>
