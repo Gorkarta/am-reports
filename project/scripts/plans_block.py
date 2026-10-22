@@ -10,7 +10,7 @@ def mlnp(v,dec=1,keep=False):
     return s+' млн ₽'
 def cards(real,PN,rev,PR,MINT,MINR,GT,GR,sub_t,sub_r='',sold=None,inv='',ret=0):
     if sold is not None:  # с 21.10.2026: крупно «Продано билетов», реализовано — справочно (Инструкция п. 7.2.1.1)
-        t=(f"<div class=k><div class=l>Продано билетов</div><div class=v style='font-size:30px;margin:6px 0 4px'>{n_(sold)}</div>"
+        t=(f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(sold)}</div>"
            f"<div class=s><span class=sub>реализовано {n_(real)} (+{inv} пригл. −{ret} возвраты)</span><br><br>"
            f"{dev(real/PN-1)} от <nobr>прогноза {n_(PN)}</nobr><br><b>{pct1(real/MINT)}</b> от <nobr>минплана {n_(MINT)}</nobr><br><b>{pct1(real/GT)}</b> от <nobr>цели {n_(GT)}</nobr></div></div>")
     else:
