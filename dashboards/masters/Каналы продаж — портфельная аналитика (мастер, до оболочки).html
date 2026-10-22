@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Каналы продаж — портфельная аналитика</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0c0b12;
+    --surface-1:#17151f;
+    --surface-2:#1d1a26;
+    --surface-3:#25212e;
+    --border:#2a2635;
+    --text-primary:#f5f3fa;
+    --text-secondary:#c7c2d6;
+    --text-muted:#a29cb3;
+    --accent:#ffb238;
+    --accent-soft:#332512;
+    --grid-line:#221f2c;
+
+    --s1:#ffb238; --s2:#ff4fa3; --s3:#8b5cf6; --s4:#2dd4bf;
+    --s5:#ff6a4d; --s6:#34d399; --other:#5b5568;
+
+    --good:#34d399; --warning:#ffcf5c; --serious:#ff8a5c; --critical:#ff5470;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 520px at 14% -8%, rgba(255,178,56,.13), transparent 60%),
+      radial-gradient(ellipse 800px 520px at 100% 4%, rgba(139,92,246,.15), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--text-primary);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:'Unbounded',system-ui,sans-serif; margin:0; text-wrap:balance; }
+  .dash{ max-width:1180px; margin:0 auto; padding:28px 20px 60px; display:flex; flex-direction:column; gap:22px; }
+
+  .dash__header{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; padding-bottom:4px;}
+  .eyebrow{ margin:0 0 4px; font-size:12.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-family:'Inter',sans-serif;}
+  .eyebrow--ts{ margin:0 0 6px; font-size:12px; }
+  .eyebrow-sub-ts{ margin:0 0 8px; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-family:'Inter',sans-serif; opacity:.82; }
+  .dash__title-block h1{ font-size:26px; font-weight:800; color:var(--text-primary);}
+  .subtitle{ margin:8px 0 0; font-size:13.5px; color:var(--text-secondary); max-width:66ch;}
+
+  /* ---- controls ---- */
+  .controls{ display:flex; flex-wrap:wrap; gap:12px 16px; align-items:center; padding:14px 16px; background:var(--surface-1); border:1px solid var(--border); border-radius:14px; }
+  .controls__group{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .controls__label{ font-size:11px; color:var(--text-muted); font-weight:700; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+  .select-wrap{ position:relative; }
+  .select-wrap select{ appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    padding:9px 34px 9px 12px; border-radius:9px; border:1.5px solid rgba(255,255,255,.18);
+    background:var(--surface-2); color:var(--text-primary); font-size:13px; font-family:inherit; cursor:pointer;
+    transition:border-color .15s ease, background .15s ease; }
+  .select-wrap select:hover{ border-color:rgba(255,178,56,.5); background:var(--surface-3); }
+  .select-wrap select:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,178,56,.18); }
+  .select-wrap::after{ content:''; position:absolute; right:13px; top:50%; width:8px; height:8px;
+    border-right:2px solid var(--text-secondary); border-bottom:2px solid var(--text-secondary);
+    transform:translateY(-65%) rotate(45deg); pointer-events:none; }
+  .controls__sep{ color:var(--text-muted); font-size:12.5px; }
+  .reset-btn{ padding:9px 14px; border-radius:9px; border:1.5px solid var(--border); background:transparent;
+    color:var(--text-secondary); font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer; transition:all .15s ease; }
+  .reset-btn:hover{ border-color:rgba(255,178,56,.5); color:var(--text-primary); }
+
+  .pillgroup{ display:flex; flex-wrap:wrap; gap:6px; }
+  .pill{ padding:9px 14px; border-radius:999px; border:1.5px solid var(--border); background:var(--surface-2);
+    color:var(--text-secondary); font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer;
+    transition:all .15s ease; white-space:nowrap; }
+  .pill:hover{ border-color:rgba(255,178,56,.5); color:var(--text-primary); }
+  .pill.active{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+
+  /* ---- KPI ---- */
+  .kpi-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:12px; }
+  .kpi{ background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015)); border:1px solid var(--border);
+    border-radius:14px; padding:16px 18px; display:flex; flex-direction:column; gap:6px; position:relative; overflow:hidden;}
+  .kpi::before{ content:''; position:absolute; top:-34%; right:-28%; width:96px; height:96px; border-radius:50%; opacity:.4; pointer-events:none;}
+  .kpi--revenue::before{ background:radial-gradient(circle, var(--s1) 0%, transparent 70%);}
+  .kpi--tickets::before{ background:radial-gradient(circle, var(--s3) 0%, transparent 70%);}
+  .kpi--avg::before{ background:radial-gradient(circle, var(--s4) 0%, transparent 70%);}
+  .kpi--returns::before{ background:radial-gradient(circle, var(--critical) 0%, transparent 70%);}
+  .kpi--channels::before{ background:radial-gradient(circle, var(--s2) 0%, transparent 70%);}
+  .kpi--top::before{ background:radial-gradient(circle, var(--s6) 0%, transparent 70%);}
+  .kpi__label{ font-size:11px; color:var(--text-muted); font-weight:700; letter-spacing:.05em; text-transform:uppercase; position:relative;}
+  .kpi__value{ font-size:22px; font-weight:700; font-family:'Unbounded',sans-serif; color:var(--text-primary); line-height:1.25; position:relative;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .kpi--top .kpi__value{ font-size:16px; }
+  .kpi__sub{ font-size:12px; color:var(--text-secondary); position:relative;}
+
+  /* ---- cards ---- */
+  .grid-2{ display:grid; grid-template-columns:repeat(auto-fit,minmax(460px,1fr)); gap:16px; }
+  .card{ background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015)); border:1px solid var(--border);
+    border-radius:16px; padding:18px 20px 20px; box-shadow:0 30px 60px -32px rgba(0,0,0,.7); }
+  .card--full{ grid-column:1 / -1; }
+  .card__head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:4px; flex-wrap:wrap;}
+  .card__head h2{ font-size:15.5px; font-weight:700; }
+  .card__sub{ margin:5px 0 14px; font-size:12.5px; color:var(--text-secondary); max-width:64ch; }
+
+  /* ---- breakdown bar list ---- */
+  .blist{ display:flex; flex-direction:column; gap:9px; }
+  .blist__row{ display:grid; grid-template-columns:minmax(110px,220px) 1fr auto; gap:10px; align-items:center; font-size:12.5px; }
+  .blist__name{ color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .blist__track{ position:relative; height:10px; background:var(--surface-2); border-radius:5px; overflow:hidden; }
+  .blist__fill{ position:absolute; inset:0 auto 0 0; border-radius:5px; }
+  .blist__val{ display:flex; flex-direction:column; align-items:flex-end; gap:1px; white-space:nowrap; text-align:right; min-width:112px; }
+  .blist__val-primary{ color:var(--text-primary); font-weight:700; font-size:13px; }
+  .blist__val-secondary{ color:var(--text-muted); font-size:11px; }
+  .blist__empty{ color:var(--text-muted); font-size:12.5px; padding:8px 0;}
+  .blist__row--other .blist__name{ font-style:italic; }
+  .blist__row--other .blist__val-primary{ color:var(--text-secondary); font-weight:600; }
+
+  /* ---- returns list (with benchmark line) ---- */
+  .rlist{ position:relative; padding-top:6px; }
+  .rlist__bench{ position:absolute; top:0; bottom:22px; width:0; border-left:2px dashed var(--text-muted); opacity:.65; z-index:1; }
+  .rlist__bench-label{ position:absolute; top:-2px; transform:translateX(-50%); font-size:10.5px; color:var(--text-muted); background:var(--surface-1); padding:0 4px; white-space:nowrap; }
+
+  /* ---- charts ---- */
+  .chart-wrap{ position:relative; width:100%; margin-top:6px;}
+  .chart-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .chart-wrap--modal{ margin-top:2px; }
+  .gridline{ stroke:var(--grid-line); stroke-width:1; opacity:.7; }
+  .axis-label{ fill:var(--text-muted); font-size:13px; font-weight:600; font-family:'Inter',sans-serif; }
+  .area-seg{ stroke:var(--bg); stroke-width:1; }
+  .hit-col{ cursor:crosshair; }
+
+  /* ---- expand-to-fullscreen button on chart cards ---- */
+  .expand-btn{ display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px;
+    border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-secondary); cursor:pointer; flex:none;
+    transition:all .15s ease; }
+  .expand-btn:hover{ border-color:rgba(255,178,56,.5); color:var(--accent); background:var(--surface-3); }
+  .expand-btn svg{ width:15px; height:15px; }
+
+  /* ---- fullscreen modal ---- */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(6,5,10,.78); backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center; padding:28px; z-index:100; }
+  .modal-overlay[hidden]{ display:none; }
+  .modal-panel{ background:var(--surface-1); border:1px solid var(--border); border-radius:18px;
+    width:min(1320px,100%); max-height:92vh; overflow-y:auto; padding:22px 26px 26px;
+    box-shadow:0 40px 100px -30px rgba(0,0,0,.85); }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+  .modal-head h2{ font-size:19px; font-weight:700; }
+  .modal-close{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:9px;
+    border:1.5px solid var(--border); background:var(--surface-2); color:var(--text-secondary); cursor:pointer; font-size:18px;
+    line-height:1; flex:none; transition:all .15s ease; }
+  .modal-close:hover{ border-color:rgba(255,178,56,.5); color:var(--text-primary); }
+  .rlist--modal .blist__row{ grid-template-columns:minmax(160px,320px) 1fr auto; font-size:14px; }
+  .rlist--modal .blist__val-primary{ font-size:15px; }
+  .tooltip{ position:absolute; pointer-events:none; background:#1f1c29; border:1px solid var(--border);
+    border-radius:8px; padding:9px 11px; font-size:12px; box-shadow:0 12px 30px rgba(0,0,0,.5); color:var(--text-primary);
+    white-space:nowrap; opacity:0; transition:opacity .08s ease; z-index:5; }
+  .tooltip b{ font-family:'Unbounded',sans-serif; font-weight:600; font-size:11.5px; }
+  .tooltip__row{ display:flex; align-items:center; gap:6px; margin-top:3px; }
+  .tooltip__swatch{ width:8px; height:8px; border-radius:2px; flex:none; }
+  .crosshair{ stroke:var(--text-muted); stroke-width:1; stroke-dasharray:3 3; opacity:0; pointer-events:none; }
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:11.5px; color:var(--text-secondary); }
+  .legend__item{ display:flex; align-items:center; gap:6px; cursor:default;}
+  .legend__swatch{ width:10px; height:10px; border-radius:3px; flex:none; }
+
+  .note{ font-size:11.5px; color:var(--text-muted); line-height:1.55; margin:0; }
+  .note + .note{ margin-top:6px; }
+  .caveats{ display:flex; flex-direction:column; gap:6px; }
+
+  .dash__footer{ font-size:11.5px; color:var(--text-muted); text-align:center; padding-top:6px; }
+  .dash__footer a{ color:var(--text-muted); }
+
+  @media (max-width:600px){
+    .dash{ padding:18px 12px 44px; }
+    .dash__title-block h1{ font-size:20px; }
+    .blist__row{ grid-template-columns:96px 1fr auto; }
+    .blist__val{ min-width:88px; }
+    .grid-2{ grid-template-columns:1fr; }
+  }
+
+  /* ---- help icon + popover (added per rules v4.3, portal help feature) ---- */
+  .title-row-help{ position:relative; display:inline-flex; align-items:center; gap:8px; }
+  .help-icon{
+    width:20px; height:20px; border-radius:50%; border:1.5px solid var(--text-muted); color:var(--text-muted);
+    display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; font-family:'Inter',sans-serif;
+    cursor:help; flex-shrink:0; transition:all .15s ease; margin-left:2px;
+  }
+  .help-icon:hover{ border-color:var(--accent); color:var(--accent); }
+  .help-pop{
+    position:absolute; top:34px; left:0; width:420px; max-width:88vw; max-height:65vh; overflow-y:auto;
+    background:#1f1c29; border:1px solid var(--border); border-radius:12px; padding:16px 18px;
+    box-shadow:0 24px 60px rgba(0,0,0,.55); z-index:30; opacity:0; pointer-events:none; transform:translateY(-4px);
+    transition:opacity .12s ease, transform .12s ease; font-size:12.5px; line-height:1.55; color:var(--text-secondary);
+  }
+  .help-icon:hover + .help-pop, .help-pop:hover{ opacity:1; pointer-events:auto; transform:translateY(0); }
+  .help-pop h4{ font-family:'Unbounded',sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin:0 0 6px; }
+  .help-pop h4:not(:first-child){ margin-top:14px; }
+  .help-pop p{ margin:0 0 4px; }
+  .help-pop ul{ margin:0; padding-left:16px; }
+  .help-pop li{ margin-bottom:5px; }
+  .help-pop li b{ color:var(--text-primary); font-weight:600; }
+</style>
+
+
+</head>
+<body>
+
+</head>
+<body>
+<div class="dash">
+  <header class="dash__header">
+    <div class="dash__title-block">
+      <p class="eyebrow eyebrow--ts">АРЕНАМАСТЕР · АНАЛИТИКА</p>
+      <p class="eyebrow-sub-ts">БИЛЕТНЫЙ СЕРВИС</p>
+      <div class="title-row-help">
+        <h1>Каналы продаж — портфельная аналитика</h1>
+        <span class="help-icon" tabindex="0">?</span>
+
+      <div class="help-pop">
+        <h4>Суть дашборда</h4>
+        <p>Единственный дашборд, который смотрит не на одно мероприятие, а на весь портфель площадки сразу: через какие каналы идёт билетная выручка, как соотношение каналов меняется во времени и на каких каналах сосредоточены возвраты.</p>
+        <h4>Ограничения по данным</h4>
+        <p>Каналы сгруппированы по ключевым словам в названии дистрибьютора (сквозная группировка, а не сырой sale_channel_id) — новый партнёр требует ручного добавления правила, иначе осядет в «Остальное». Пригласительные исключены из всех блоков (нет sale_channel_id по построению системы). Блок «Доля возвратов по каналам» статичный и не реагирует на фильтр периода. В динамике долей показаны только месяцы, где по всей площадке продано ≥20 билетов.</p>
+        <h4>Показатели</h4>
+        <ul>
+          <li><b>Выручка / Билетов продано / Средняя цена билета</b> — портфельный итог за выбранный период.</li>
+          <li><b>Доля возвратов за период</b> — какая доля билетов не доходит до зрителя.</li>
+          <li><b>Каналов с продажами / Топ-канал по выручке</b> — насколько широко используется портфель каналов и кто сейчас главный источник.</li>
+          <li><b>Каналы продаж — выручка и билеты</b> — топ-8 каналов + «Остальное» по выручке.</li>
+          <li><b>Динамика доли каналов во времени</b> — смещаются ли продажи в сторону конкретных агрегаторов.</li>
+          <li><b>Доля возвратов по каналам</b> — где исторически оседает больше всего возвратов (от 300 оформленных билетов на канал).</li>
+        </ul>
+      </div>
+      </div>
+      <p class="subtitle">Комплексный анализ продажи билетов и каналов сбыта</p>
+    </div>
+  </header>
+
+  <section class="controls">
+    <div class="controls__group">
+      <span class="controls__label">Период (по дате оформления)</span>
+      <div class="select-wrap"><select id="fromMonth"></select></div>
+      <span class="controls__sep">—</span>
+      <div class="select-wrap"><select id="toMonth"></select></div>
+    </div>
+  </section>
+
+  <section class="kpi-row" id="kpiRow"></section>
+
+  <section class="card card--full">
+    <div class="card__head">
+      <div>
+        <h2>Каналы продаж — выручка и билеты</h2>
+        <p class="card__sub">Топ-8 каналов (сгруппированы по дистрибьютору/агрегатору) + «Остальное». На первом месте — выручка и её доля, билеты — справочно. Ширина бара — относительно максимума среди показанных строк.</p>
+      </div>
+      <div class="pillgroup" id="typeFilter"></div>
+    </div>
+    <div class="blist" id="channelList"></div>
+  </section>
+
+  <section class="grid-2">
+    <div class="card">
+      <div class="card__head">
+        <div>
+          <h2>Динамика доли каналов во времени</h2>
+          <p class="card__sub">Помесячно, по проданным билетам (без пригласительных и аннулированных). Топ-4 канала + «Остальные».</p>
+        </div>
+        <button class="expand-btn" id="expandShare" title="Развернуть на весь экран" aria-label="Развернуть на весь экран">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+      </div>
+      <div class="pillgroup" id="shareMetric" style="margin-bottom:10px;"></div>
+      <div class="chart-wrap" id="shareChart"></div>
+      <div class="legend" id="shareLegend"></div>
+      <p class="note" id="shareSkipNote" style="margin-top:8px;"></p>
+    </div>
+
+    <div class="card">
+      <div class="card__head">
+        <div>
+          <h2>Доля возвратов по каналам</h2>
+          <p class="card__sub">Аннулировано / оформлено, за всю историю данных. Каналы с объёмом от 300 оформленных билетов — иначе доля считается на слишком малой выборке.</p>
+        </div>
+        <button class="expand-btn" id="expandReturns" title="Развернуть на весь экран" aria-label="Развернуть на весь экран">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+      </div>
+      <div class="rlist" id="returnsList"></div>
+    </div>
+  </section>
+
+  <section class="card card--full">
+    <div class="card__head"><h2>Оговорки по данным и методологии</h2></div>
+    <div class="caveats" id="caveats"></div>
+  </section>
+
+  <footer class="dash__footer">
+    Снимок данных на <span id="genDate"></span> · источник — bs_export (билетная система) · статический расчёт, не подключён к базе напрямую
+  </footer>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h2 id="modalTitle"></h2>
+      <button class="modal-close" id="modalClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script id="dashboard-data" type="application/json">{"meta":{"generated":"03.10.2026","total_tickets_raw":99352,"test_excluded_tickets":126,"test_excluded_performances":9,"service_excluded_tickets":13310,"tickets_in_scope":85916,"date_min":"2025-02-28","date_max":"2026-10-03","sold_total":48442,"invite_total":24422,"pending_total":10,"cancelled_total":13042,"revenue_total_sold":298510979.65,"revenue_total_cancelled":90190347.4,"channels_total":14,"portfolio_return_rate":0.2121},"months":["2025-02","2025-03","2025-05","2025-06","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10"],"channel_rank":["Яндекс Афиша","Прямые продажи (сайт Арены)","Конные Сезоны сайт организатора","Концерт.ру","СТС Kids сайт организатора","Сайт premia.muz-tv.ru","Кассир.ру","Стас Михайлов сайт организатора","М.Видео","Red Kassa","Lida закрытый канал продаж","Княzz.ММГН"],"top_bar_keys":["Яндекс Афиша","Прямые продажи (сайт Арены)","Конные Сезоны сайт организатора","Концерт.ру","СТС Kids сайт организатора","Сайт premia.muz-tv.ru","Кассир.ру","Стас Михайлов сайт организатора"],"top_time_keys":["Яндекс Афиша","Прямые продажи (сайт Арены)","Конные Сезоны сайт организатора","Концерт.ру"],"rows":[{"m":"2026-08","c":"Яндекс Афиша","s":"sold","t":1615,"r":7890475.0},{"m":"2026-08","c":"Прямые продажи (сайт Арены)","s":"sold","t":3268,"r":18864135.0},{"m":"2026-09","c":"Яндекс Афиша","s":"sold","t":9392,"r":54321763.0},{"m":"2026-09","c":"Прямые продажи (сайт Арены)","s":"sold","t":4840,"r":34160356.0},{"m":"2026-09","c":"Конные Сезоны сайт организатора","s":"sold","t":4686,"r":26044698.75},{"m":"2026-09","c":"Яндекс Афиша","s":"cancelled","t":2847,"r":17634285.0},{"m":"2026-09","c":"Концерт.ру","s":"cancelled","t":245,"r":1639500.0},{"m":"2026-09","c":"СТС Kids сайт организатора","s":"sold","t":751,"r":3875260.0},{"m":"2026-09","c":"Кассир.ру","s":"sold","t":497,"r":2850196.0},{"m":"2026-09","c":"Концерт.ру","s":"sold","t":648,"r":3826200.0},{"m":"2026-08","c":"Концерт.ру","s":"sold","t":614,"r":3901800.0},{"m":"2026-08","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":155,"r":1030280.0},{"m":"2026-09","c":"Кассир.ру","s":"cancelled","t":270,"r":1525934.0},{"m":"2026-05","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":51,"r":339000.0},{"m":"2026-09","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":135,"r":1160956.0},{"m":"2026-08","c":"Яндекс Афиша","s":"cancelled","t":445,"r":2755275.0},{"m":"2026-08","c":"Конные Сезоны сайт организатора","s":"sold","t":1694,"r":10267612.5},{"m":"2026-08","c":"СТС Kids сайт организатора","s":"sold","t":262,"r":1602000.0},{"m":"2026-10","c":"Яндекс Афиша","s":"sold","t":674,"r":3037620.0},{"m":"2026-05","c":"Прямые продажи (сайт Арены)","s":"sold","t":634,"r":5164300.0},{"m":"2026-07","c":"Прямые продажи (сайт Арены)","s":"sold","t":3847,"r":15159228.72},{"m":"2026-01","c":"Прямые продажи (сайт Арены)","s":"sold","t":1834,"r":7647950.0},{"m":"2026-01","c":"Кассир.ру","s":"sold","t":104,"r":438000.0},{"m":"2026-04","c":"Прямые продажи (сайт Арены)","s":"sold","t":829,"r":4070550.0},{"m":"2026-09","c":"Стас Михайлов сайт организатора","s":"sold","t":113,"r":740700.0},{"m":"2026-07","c":"Концерт.ру","s":"sold","t":907,"r":4051600.0},{"m":"2026-07","c":"Кассир.ру","s":"sold","t":205,"r":647400.0},{"m":"2026-08","c":"Княzz.ММГН","s":"sold","t":2,"r":8000.0},{"m":"2026-03","c":"Прямые продажи (сайт Арены)","s":"sold","t":956,"r":4725650.0},{"m":"2026-04","c":"Концерт.ру","s":"sold","t":289,"r":922730.0},{"m":"2026-07","c":"Концерт.ру","s":"cancelled","t":273,"r":3648700.0},{"m":"2026-08","c":"Кассир.ру","s":"cancelled","t":42,"r":178000.0},{"m":"2026-03","c":"Концерт.ру","s":"cancelled","t":342,"r":1182300.0},{"m":"2026-03","c":"Концерт.ру","s":"sold","t":302,"r":903200.0},{"m":"2026-08","c":"Кассир.ру","s":"sold","t":163,"r":571100.0},{"m":"2026-03","c":"Red Kassa","s":"cancelled","t":29,"r":119200.0},{"m":"2025-02","c":"Без канала (нет данных)","s":"cancelled","t":6,"r":20000.0},{"m":"2026-02","c":"Яндекс Афиша","s":"sold","t":660,"r":5808610.0},{"m":"2026-01","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":335,"r":1408150.0},{"m":"2026-03","c":"Яндекс Афиша","s":"sold","t":784,"r":7624510.0},{"m":"2026-07","c":"Кассир.ру","s":"cancelled","t":61,"r":165800.0},{"m":"2026-07","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":86,"r":357050.0},{"m":"2026-07","c":"Яндекс Афиша","s":"sold","t":623,"r":2738000.0},{"m":"2026-04","c":"Концерт.ру","s":"cancelled","t":95,"r":269700.0},{"m":"2026-08","c":"Концерт.ру","s":"cancelled","t":202,"r":1477300.0},{"m":"2026-07","c":"Конные Сезоны сайт организатора","s":"sold","t":423,"r":2503970.0},{"m":"2026-01","c":"Яндекс Афиша","s":"sold","t":1180,"r":10190770.0},{"m":"2026-04","c":"Яндекс Афиша","s":"sold","t":644,"r":9013050.0},{"m":"2026-02","c":"Яндекс Афиша","s":"cancelled","t":229,"r":2175680.0},{"m":"2025-11","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":1905,"r":8270500.0},{"m":"2026-08","c":"Red Kassa","s":"cancelled","t":62,"r":552200.0},{"m":"2026-02","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":52,"r":345200.0},{"m":"2026-06","c":"Прямые продажи (сайт Арены)","s":"sold","t":722,"r":5097450.0},{"m":"2026-02","c":"Прямые продажи (сайт Арены)","s":"sold","t":477,"r":3304420.0},{"m":"2026-06","c":"Концерт.ру","s":"sold","t":446,"r":2767300.0},{"m":"2026-05","c":"Яндекс Афиша","s":"sold","t":577,"r":9698350.0},{"m":"2026-02","c":"Кассир.ру","s":"cancelled","t":5,"r":16400.0},{"m":"2026-03","c":"Кассир.ру","s":"cancelled","t":5,"r":22600.0},{"m":"2026-03","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":50,"r":308820.0},{"m":"2026-07","c":"Яндекс Афиша","s":"cancelled","t":168,"r":797900.0},{"m":"2026-03","c":"Яндекс Афиша","s":"cancelled","t":273,"r":3394240.0},{"m":"2026-08","c":"Конные Сезоны сайт организатора","s":"cancelled","t":67,"r":461810.0},{"m":"2026-08","c":"СТС Kids сайт организатора","s":"cancelled","t":2,"r":10800.0},{"m":"2026-06","c":"Яндекс Афиша","s":"cancelled","t":2293,"r":13504850.0},{"m":"2026-07","c":"Конные Сезоны сайт организатора","s":"cancelled","t":22,"r":188420.0},{"m":"2026-06","c":"Конные Сезоны сайт организатора","s":"sold","t":166,"r":956335.0},{"m":"2026-04","c":"Кассир.ру","s":"cancelled","t":17,"r":86800.0},{"m":"2026-08","c":"Red Kassa","s":"sold","t":4,"r":14800.0},{"m":"2026-04","c":"Red Kassa","s":"cancelled","t":54,"r":231100.0},{"m":"2026-05","c":"Яндекс Афиша","s":"cancelled","t":234,"r":7107750.0},{"m":"2025-12","c":"Прямые продажи (сайт Арены)","s":"sold","t":370,"r":2258700.0},{"m":"2025-10","c":"Прямые продажи (сайт Арены)","s":"sold","t":25,"r":111000.0},{"m":"2026-02","c":"Кассир.ру","s":"sold","t":11,"r":42800.0},{"m":"2026-06","c":"Яндекс Афиша","s":"sold","t":440,"r":5785500.0},{"m":"2025-08","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":149,"r":103640.0},{"m":"2025-12","c":"Кассир.ру","s":"sold","t":84,"r":339000.0},{"m":"2026-01","c":"Яндекс Афиша","s":"cancelled","t":433,"r":4847320.0},{"m":"2026-07","c":"СТС Kids сайт организатора","s":"sold","t":106,"r":562100.0},{"m":"2026-04","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":48,"r":228500.0},{"m":"2026-06","c":"Концерт.ру","s":"cancelled","t":133,"r":1121600.0},{"m":"2026-03","c":"Кассир.ру","s":"sold","t":10,"r":38160.0},{"m":"2026-04","c":"Яндекс Афиша","s":"cancelled","t":266,"r":5771950.0},{"m":"2026-03","c":"М.Видео","s":"sold","t":4,"r":29200.0},{"m":"2026-01","c":"Кассир.ру","s":"cancelled","t":116,"r":321000.0},{"m":"2025-11","c":"Кассир.ру","s":"sold","t":33,"r":145000.0},{"m":"2026-05","c":"Сайт premia.muz-tv.ru","s":"sold","t":112,"r":2034550.0},{"m":"2026-04","c":"Кассир.ру","s":"sold","t":14,"r":71000.0},{"m":"2026-02","c":"М.Видео","s":"sold","t":1,"r":4000.0},{"m":"2026-05","c":"Кассир.ру","s":"sold","t":33,"r":94100.0},{"m":"2025-03","c":"Без канала (нет данных)","s":"cancelled","t":9,"r":36000.0},{"m":"2025-03","c":"Прямые продажи (сайт Арены)","s":"sold","t":6,"r":35729.68},{"m":"2025-03","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":3,"r":16761.63},{"m":"2025-05","c":"Прямые продажи (сайт Арены)","s":"sold","t":2,"r":7800.0},{"m":"2026-01","c":"Концерт.ру","s":"cancelled","t":4,"r":4200.0},{"m":"2025-11","c":"Яндекс Афиша","s":"sold","t":58,"r":262000.0},{"m":"2025-08","c":"Прямые продажи (сайт Арены)","s":"sold","t":5,"r":50000.0},{"m":"2025-06","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":1,"r":6000.0},{"m":"2025-10","c":"Яндекс Афиша","s":"sold","t":24,"r":133000.0},{"m":"2025-12","c":"Яндекс Афиша","s":"sold","t":456,"r":4070980.0},{"m":"2025-09","c":"Прямые продажи (сайт Арены)","s":"sold","t":7,"r":18000.0},{"m":"2025-11","c":"Прямые продажи (сайт Арены)","s":"sold","t":74,"r":365800.0},{"m":"2026-05","c":"Концерт.ру","s":"cancelled","t":2,"r":12800.0},{"m":"2025-12","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":114,"r":140220.77},{"m":"2026-05","c":"Конные Сезоны сайт организатора","s":"cancelled","t":3,"r":10500.0},{"m":"2026-10","c":"Яндекс Афиша","s":"cancelled","t":139,"r":602380.0},{"m":"2026-05","c":"Кассир.ру","s":"cancelled","t":14,"r":76400.0},{"m":"2025-12","c":"Яндекс Афиша","s":"cancelled","t":221,"r":2401000.0},{"m":"2026-05","c":"Концерт.ру","s":"sold","t":2,"r":12800.0},{"m":"2025-10","c":"Яндекс Афиша","s":"cancelled","t":22,"r":140000.0},{"m":"2026-10","c":"Кассир.ру","s":"sold","t":48,"r":250100.0},{"m":"2025-10","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":2,"r":4000.0},{"m":"2025-11","c":"Кассир.ру","s":"cancelled","t":11,"r":25000.0},{"m":"2025-11","c":"Яндекс Афиша","s":"cancelled","t":34,"r":171000.0},{"m":"2026-05","c":"Red Kassa","s":"cancelled","t":2,"r":8000.0},{"m":"2025-12","c":"Кассир.ру","s":"cancelled","t":42,"r":204000.0},{"m":"2026-06","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":40,"r":231050.0},{"m":"2026-10","c":"Прямые продажи (сайт Арены)","s":"sold","t":348,"r":1662440.0},{"m":"2026-01","c":"Red Kassa","s":"cancelled","t":5,"r":41000.0},{"m":"2026-01","c":"Концерт.ру","s":"sold","t":2,"r":8000.0},{"m":"2026-06","c":"М.Видео","s":"sold","t":4,"r":33400.0},{"m":"2026-06","c":"Red Kassa","s":"cancelled","t":2,"r":25800.0},{"m":"2026-06","c":"Кассир.ру","s":"sold","t":17,"r":56100.0},{"m":"2026-02","c":"Концерт.ру","s":"sold","t":9,"r":33900.0},{"m":"2026-07","c":"Lida закрытый канал продаж","s":"sold","t":9,"r":25280.0},{"m":"2026-03","c":"Red Kassa","s":"sold","t":3,"r":9000.0},{"m":"2026-02","c":"Концерт.ру","s":"cancelled","t":13,"r":62900.0},{"m":"2026-06","c":"Кассир.ру","s":"cancelled","t":8,"r":28800.0},{"m":"2026-06","c":"М.Видео","s":"cancelled","t":4,"r":19400.0},{"m":"2026-06","c":"Конные Сезоны сайт организатора","s":"cancelled","t":8,"r":48600.0},{"m":"2026-07","c":"Red Kassa","s":"cancelled","t":19,"r":176400.0},{"m":"2026-02","c":"Red Kassa","s":"cancelled","t":2,"r":4800.0},{"m":"2026-07","c":"СТС Kids сайт организатора","s":"cancelled","t":6,"r":15000.0},{"m":"2026-07","c":"Lida закрытый канал продаж","s":"cancelled","t":2,"r":4480.0},{"m":"2026-05","c":"Сайт premia.muz-tv.ru","s":"cancelled","t":4,"r":60700.0},{"m":"2026-03","c":"Сайт premia.muz-tv.ru","s":"cancelled","t":10,"r":176000.0},{"m":"2025-12","c":"Сайт premia.muz-tv.ru","s":"cancelled","t":5,"r":24000.0},{"m":"2026-06","c":"Сайт premia.muz-tv.ru","s":"cancelled","t":1,"r":8500.0},{"m":"2025-12","c":"Сайт premia.muz-tv.ru","s":"sold","t":4,"r":38000.0},{"m":"2026-06","c":"Сайт premia.muz-tv.ru","s":"sold","t":101,"r":1971150.0},{"m":"2026-03","c":"Сайт premia.muz-tv.ru","s":"sold","t":44,"r":665500.0},{"m":"2026-04","c":"Сайт premia.muz-tv.ru","s":"sold","t":75,"r":1483800.0},{"m":"2026-09","c":"Red Kassa","s":"sold","t":8,"r":37800.0},{"m":"2026-09","c":"Red Kassa","s":"cancelled","t":27,"r":220700.0},{"m":"2026-10","c":"Кассир.ру","s":"cancelled","t":12,"r":79000.0},{"m":"2026-10","c":"Прямые продажи (сайт Арены)","s":"cancelled","t":6,"r":14070.0},{"m":"2026-10","c":"Стас Михайлов сайт организатора","s":"sold","t":6,"r":48000.0},{"m":"2026-09","c":"Конные Сезоны сайт организатора","s":"cancelled","t":27,"r":190525.0},{"m":"2026-09","c":"Стас Михайлов сайт организатора","s":"cancelled","t":7,"r":68000.0},{"m":"2026-09","c":"СТС Kids сайт организатора","s":"cancelled","t":8,"r":49350.0},{"m":"2026-10","c":"СТС Kids сайт организатора","s":"sold","t":55,"r":307200.0},{"m":"2026-09","c":"Идеальный исполнитель сайт организатора","s":"cancelled","t":1,"r":2500.0}],"returns":[{"c":"Кассир.ру","issued":1822,"cancelled":603,"rate":0.331},{"c":"Яндекс Афиша","issued":24731,"cancelled":7604,"rate":0.3075},{"c":"Концерт.ру","issued":4528,"cancelled":1309,"rate":0.2891},{"c":"Прямые продажи (сайт Арены)","issued":21376,"cancelled":3132,"rate":0.1465},{"c":"Сайт premia.muz-tv.ru","issued":356,"cancelled":20,"rate":0.0562},{"c":"Конные Сезоны сайт организатора","issued":7096,"cancelled":127,"rate":0.0179},{"c":"СТС Kids сайт организатора","issued":1190,"cancelled":16,"rate":0.0134}]}</script>
+<script>
+(function(){
+  "use strict";
+  var DATA = JSON.parse(document.getElementById('dashboard-data').textContent);
+  var MONTHS_RU = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+  var MONTHS_RU_FULL = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+
+  var COLORS = ["var(--s1)","var(--s2)","var(--s3)","var(--s4)"];
+  var OTHER_COLOR = "var(--other)";
+
+  function monthShort(m){ var p=m.split("-"); return MONTHS_RU[parseInt(p[1],10)-1]+" "+p[0].slice(2); }
+  function monthFull(m){ var p=m.split("-"); return MONTHS_RU_FULL[parseInt(p[1],10)-1]+" "+p[0]; }
+  function fmtRub(v){
+    if (Math.abs(v) >= 1000000) return (v/1000000).toLocaleString('ru-RU',{maximumFractionDigits:1,minimumFractionDigits:1})+" млн ₽";
+    return Math.round(v).toLocaleString('ru-RU')+" ₽";
+  }
+  function fmtNum(v){ return Math.round(v).toLocaleString('ru-RU'); }
+  function fmtPct(v){ return (v*100).toLocaleString('ru-RU',{maximumFractionDigits:1,minimumFractionDigits:1})+"%"; }
+
+  // ---------- period selects ----------
+  var months = DATA.months;
+  var fromSel = document.getElementById('fromMonth');
+  var toSel = document.getElementById('toMonth');
+  months.forEach(function(m,i){
+    var o1=document.createElement('option'); o1.value=i; o1.textContent=monthFull(m); fromSel.appendChild(o1);
+    var o2=document.createElement('option'); o2.value=i; o2.textContent=monthFull(m); toSel.appendChild(o2);
+  });
+  fromSel.value = 0;
+  toSel.value = months.length-1;
+
+  var state = { from:0, to:months.length-1, type:'all', shareMetric:'revenue' };
+
+  function clampRange(){
+    if (state.from>state.to){ var t=state.from; state.from=state.to; state.to=t; }
+    fromSel.value = state.from; toSel.value = state.to;
+  }
+
+  fromSel.addEventListener('change', function(){ state.from=parseInt(fromSel.value,10); clampRange(); render(); });
+  toSel.addEventListener('change', function(){ state.to=parseInt(toSel.value,10); clampRange(); render(); });
+
+  // ---------- type filter pills (channel bar list) ----------
+  var TYPE_OPTIONS = [
+    {key:'all', label:'Все билеты'},
+    {key:'sold', label:'Проданные'},
+    {key:'cancelled', label:'Аннулированные'}
+  ];
+  var typeWrap = document.getElementById('typeFilter');
+  TYPE_OPTIONS.forEach(function(opt){
+    var b=document.createElement('button');
+    b.className='pill'+(opt.key===state.type?' active':'');
+    b.textContent=opt.label;
+    b.addEventListener('click', function(){
+      state.type=opt.key;
+      Array.prototype.forEach.call(typeWrap.children, function(c){ c.classList.remove('active'); });
+      b.classList.add('active');
+      renderChannelList();
+    });
+    typeWrap.appendChild(b);
+  });
+
+  // ---------- share-metric pills: reusable, so the same control can live in the card AND the fullscreen modal ----------
+  var SHARE_OPTIONS = [
+    {key:'revenue', label:'Выручка'},
+    {key:'tickets', label:'Билеты'}
+  ];
+  function buildSharePills(containerId){
+    var wrap = document.getElementById(containerId);
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    SHARE_OPTIONS.forEach(function(opt){
+      var b=document.createElement('button');
+      b.className='pill'+(opt.key===state.shareMetric?' active':'');
+      b.textContent=opt.label;
+      b.addEventListener('click', function(){
+        state.shareMetric=opt.key;
+        renderShareChart('shareChart','shareLegend','shareSkipNote');
+        if (modalOpenFor==='share') renderShareChart('modalShareChart','modalShareLegend','modalShareSkipNote');
+        syncSharePillGroups();
+      });
+      wrap.appendChild(b);
+    });
+  }
+  function syncSharePillGroups(){
+    ['shareMetric','modalShareMetric'].forEach(function(id){
+      var wrap = document.getElementById(id);
+      if (!wrap) return;
+      Array.prototype.forEach.call(wrap.children, function(btn, idx){
+        btn.classList.toggle('active', SHARE_OPTIONS[idx].key===state.shareMetric);
+      });
+    });
+  }
+
+  // ---------- data helpers ----------
+  function rowsInRange(){
+    var fromM = months[state.from], toM = months[state.to];
+    return DATA.rows.filter(function(r){ return r.m >= fromM && r.m <= toM; });
+  }
+
+  function aggByChannel(rows, statuses){
+    var map = {};
+    rows.forEach(function(r){
+      if (statuses.indexOf(r.s) === -1) return;
+      if (!map[r.c]) map[r.c] = {tickets:0, revenue:0};
+      map[r.c].tickets += r.t;
+      map[r.c].revenue += r.r;
+    });
+    return map;
+  }
+
+  function statusesForType(type){
+    if (type==='sold') return ['sold'];
+    if (type==='cancelled') return ['cancelled'];
+    return ['sold','cancelled'];
+  }
+
+  // ---------- KPI ----------
+  function renderKPI(){
+    var rows = rowsInRange();
+    var soldMap = aggByChannel(rows, ['sold']);
+    var cancelledMap = aggByChannel(rows, ['cancelled']);
+
+    var soldTickets=0, soldRevenue=0, cancelledTickets=0;
+    Object.keys(soldMap).forEach(function(k){ soldTickets+=soldMap[k].tickets; soldRevenue+=soldMap[k].revenue; });
+    Object.keys(cancelledMap).forEach(function(k){ cancelledTickets+=cancelledMap[k].tickets; });
+
+    var avgPrice = soldTickets ? soldRevenue/soldTickets : 0;
+    var issued = soldTickets + cancelledTickets;
+    var returnRate = issued ? cancelledTickets/issued : 0;
+
+    var activeChannels = Object.keys(soldMap).filter(function(k){ return soldMap[k].tickets>0; }).length;
+
+    var topKey=null, topVal=-1;
+    Object.keys(soldMap).forEach(function(k){ if (soldMap[k].revenue>topVal){ topVal=soldMap[k].revenue; topKey=k; } });
+    var topShare = soldRevenue ? topVal/soldRevenue : 0;
+
+    var items = [
+      {cls:'revenue', label:'Выручка от продажи билетов', value:fmtRub(soldRevenue), sub:'за выбранный период'},
+      {cls:'tickets', label:'Билетов продано', value:fmtNum(soldTickets), sub:'шт., без пригласительных'},
+      {cls:'avg', label:'Средняя цена билета', value:fmtRub(avgPrice), sub:'выручка / билетов продано'},
+      {cls:'returns', label:'Доля возвратов за период', value:fmtPct(returnRate), sub:fmtNum(cancelledTickets)+' из '+fmtNum(issued)+' оформленных'},
+      {cls:'channels', label:'Каналов с продажами', value:fmtNum(activeChannels), sub:'из '+DATA.meta.channels_total+' в базе'},
+      {cls:'top', label:'Топ-канал по выручке', value: topKey || '—', sub: topKey ? fmtPct(topShare)+' от выручки периода' : ''}
+    ];
+
+    var wrap = document.getElementById('kpiRow');
+    wrap.innerHTML = '';
+    items.forEach(function(it){
+      var d=document.createElement('div');
+      d.className='kpi kpi--'+it.cls;
+      d.innerHTML = '<div class="kpi__label">'+it.label+'</div>'+
+        '<div class="kpi__value" title="'+String(it.value).replace(/"/g,'')+'">'+it.value+'</div>'+
+        '<div class="kpi__sub">'+it.sub+'</div>';
+      wrap.appendChild(d);
+    });
+  }
+
+  // ---------- channel bar list ----------
+  function renderChannelList(){
+    var rows = rowsInRange();
+    var statuses = statusesForType(state.type);
+    var map = aggByChannel(rows, statuses);
+
+    var top = DATA.top_bar_keys.map(function(k){
+      var v = map[k] || {tickets:0, revenue:0};
+      return {name:k, tickets:v.tickets, revenue:v.revenue};
+    });
+
+    var topSet = {}; DATA.top_bar_keys.forEach(function(k){ topSet[k]=true; });
+    var otherTickets=0, otherRevenue=0, totalRevenue=0, totalTickets=0;
+    Object.keys(map).forEach(function(k){
+      totalRevenue += map[k].revenue; totalTickets += map[k].tickets;
+      if (!topSet[k]){ otherRevenue += map[k].revenue; otherTickets += map[k].tickets; }
+    });
+
+    var list = top.slice();
+    if (otherTickets>0 || otherRevenue>0) list.push({name:'Остальное', tickets:otherTickets, revenue:otherRevenue, other:true});
+
+    var maxRevenue = Math.max.apply(null, list.map(function(r){ return r.revenue; }).concat([0]));
+
+    var wrap = document.getElementById('channelList');
+    wrap.innerHTML = '';
+    if (!totalRevenue && !totalTickets){
+      wrap.innerHTML = '<div class="blist__empty">Нет данных для выбранного периода и типа билета.</div>';
+      return;
+    }
+    list.forEach(function(r){
+      var share = totalRevenue ? r.revenue/totalRevenue : 0;
+      var width = maxRevenue ? Math.max(2, (r.revenue/maxRevenue*100)) : 0;
+      var row=document.createElement('div');
+      row.className='blist__row'+(r.other?' blist__row--other':'');
+      row.innerHTML =
+        '<div class="blist__name" title="'+r.name+'">'+r.name+'</div>'+
+        '<div class="blist__track"><div class="blist__fill" style="width:'+width+'%; background:'+(r.other?'var(--other)':'var(--accent)')+';"></div></div>'+
+        '<div class="blist__val"><span class="blist__val-primary">'+fmtRub(r.revenue)+' · '+fmtPct(share)+'</span>'+
+        '<span class="blist__val-secondary">'+fmtNum(r.tickets)+' билет.</span></div>';
+      wrap.appendChild(row);
+    });
+  }
+
+  // ---------- returns list (static, full history) — parameterized so it can render into the modal too ----------
+  function renderReturns(containerId){
+    var wrap = document.getElementById(containerId || 'returnsList');
+    wrap.innerHTML = '';
+    var data = DATA.returns;
+    if (!data.length){ wrap.innerHTML='<div class="blist__empty">Нет каналов с достаточным объёмом.</div>'; return; }
+    var avg = DATA.meta.portfolio_return_rate;
+    var maxRate = Math.max.apply(null, data.map(function(r){return r.rate;}).concat([avg]));
+
+    var inner = document.createElement('div');
+    inner.className='blist';
+    data.forEach(function(r){
+      var width = maxRate ? Math.max(2, r.rate/maxRate*100) : 0;
+      var color = r.rate >= avg*1.3 ? 'var(--critical)' : (r.rate >= avg*0.8 ? 'var(--serious)' : 'var(--good)');
+      var row=document.createElement('div');
+      row.className='blist__row';
+      row.innerHTML =
+        '<div class="blist__name" title="'+r.c+'">'+r.c+'</div>'+
+        '<div class="blist__track"><div class="blist__fill" style="width:'+width+'%; background:'+color+';"></div></div>'+
+        '<div class="blist__val"><span class="blist__val-primary">'+fmtPct(r.rate)+'</span>'+
+        '<span class="blist__val-secondary">'+fmtNum(r.cancelled)+' из '+fmtNum(r.issued)+'</span></div>';
+      inner.appendChild(row);
+    });
+    wrap.appendChild(inner);
+
+    wrap.insertAdjacentHTML('beforeend', '<p class="note" style="margin-top:10px;">Среднее по всему портфелю билетов — <b style="color:var(--text-primary)">'+fmtPct(avg)+'</b>. Зелёным — каналы заметно ниже среднего, жёлтым/красным — на уровне среднего и выше.</p>');
+  }
+
+  // ---------- monthly share chart — 100%-stacked BAR (not area), parameterized for card + modal ----------
+  function renderShareChart(chartId, legendId, noteId){
+    chartId = chartId || 'shareChart'; legendId = legendId || 'shareLegend'; noteId = noteId || 'shareSkipNote';
+    var chartWrap = document.getElementById(chartId);
+    var legendWrap = document.getElementById(legendId);
+    var noteEl = document.getElementById(noteId);
+    if (!chartWrap) return;
+
+    var fromM = months[state.from], toM = months[state.to];
+    var MIN_MONTH_TICKETS = 20; // months with fewer sold tickets are too thin to read as a share and are skipped in this chart only
+    var monthSoldTickets = {};
+    DATA.rows.forEach(function(r){
+      if (r.s!=='sold') return;
+      monthSoldTickets[r.m] = (monthSoldTickets[r.m]||0) + r.t;
+    });
+    var rangeMonths = months.filter(function(m){ return m>=fromM && m<=toM && (monthSoldTickets[m]||0) >= MIN_MONTH_TICKETS; });
+    var skippedCount = months.filter(function(m){ return m>=fromM && m<=toM; }).length - rangeMonths.length;
+
+    if (!rangeMonths.length){
+      chartWrap.innerHTML = '<div class="blist__empty">Недостаточно данных в выбранном периоде (везде меньше '+MIN_MONTH_TICKETS+' проданных билетов в месяц).</div>';
+      if (legendWrap) legendWrap.innerHTML = '';
+      if (noteEl) noteEl.textContent = '';
+      return;
+    }
+
+    var byMonth = {};
+    rangeMonths.forEach(function(m){ byMonth[m]={}; });
+    DATA.rows.forEach(function(r){
+      if (r.s!=='sold') return;
+      if (!byMonth[r.m]) return; // month filtered out (below MIN_MONTH_TICKETS) or outside range
+      if (!byMonth[r.m][r.c]) byMonth[r.m][r.c]={tickets:0,revenue:0};
+      byMonth[r.m][r.c].tickets += r.t;
+      byMonth[r.m][r.c].revenue += r.r;
+    });
+
+    var topKeys = DATA.top_time_keys;
+    var series = topKeys.concat(['__other__']);
+    var metric = state.shareMetric;
+
+    var stackData = rangeMonths.map(function(m){
+      var tot=0;
+      Object.keys(byMonth[m]).forEach(function(c){ tot += byMonth[m][c][metric]; });
+      var vals = series.map(function(k){
+        if (k==='__other__'){
+          var sumTop=0;
+          topKeys.forEach(function(tk){ if (byMonth[m][tk]) sumTop += byMonth[m][tk][metric]; });
+          var v = tot - sumTop;
+          return v>0?v:0;
+        }
+        return (byMonth[m][k] ? byMonth[m][k][metric] : 0);
+      });
+      var shares = vals.map(function(v){ return tot? v/tot : 0; });
+      return {m:m, tot:tot, vals:vals, shares:shares};
+    });
+
+    // ---- render SVG: 100%-stacked bar chart ----
+    var W=900, H=340, padL=42, padR=10, padT=14, padB=34;
+    var plotW = W-padL-padR, plotH = H-padT-padB;
+    var n = rangeMonths.length;
+    var bandFull = plotW/n;
+    var barW = Math.min(bandFull*0.62, 46);
+    var GAP = 2.5; // visual gap between stacked segments (and top/bottom of the whole bar)
+
+    function bandX0(i){ return padL + i*bandFull + (bandFull-barW)/2; }
+    function y(v){ return padT + plotH*(1-v); }
+
+    var colorFor = function(i){ return i<topKeys.length ? COLORS[i] : OTHER_COLOR; };
+
+    var svgParts = [];
+    svgParts.push('<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Динамика доли каналов">');
+    // gridlines 0/25/50/75/100
+    [0,.25,.5,.75,1].forEach(function(g){
+      var gy=y(g);
+      svgParts.push('<line class="gridline" x1="'+padL+'" x2="'+(W-padR)+'" y1="'+gy+'" y2="'+gy+'"/>');
+      svgParts.push('<text class="axis-label" x="'+(padL-8)+'" y="'+(gy+4)+'" text-anchor="end">'+Math.round(g*100)+'%</text>');
+    });
+
+    // stacked bars
+    for (var i=0;i<n;i++){
+      var d = stackData[i];
+      var x0 = bandX0(i);
+      var cum = 0;
+      for (var si=0; si<series.length; si++){
+        var v = d.shares[si];
+        var yTopFull = y(cum+v), yBotFull = y(cum);
+        var rectY = yTopFull + GAP/2;
+        var rectH = Math.max(0, (yBotFull-yTopFull) - GAP);
+        if (rectH>0.15){
+          svgParts.push('<rect x="'+x0.toFixed(2)+'" y="'+rectY.toFixed(2)+'" width="'+barW.toFixed(2)+'" height="'+rectH.toFixed(2)+'" rx="2" fill="'+colorFor(si)+'"/>');
+        }
+        cum += v;
+      }
+    }
+
+    // x labels (thin out if crowded)
+    var skip = Math.ceil(n/10);
+    for (var i=0;i<n;i+=skip){
+      var lx = bandX0(i)+barW/2;
+      svgParts.push('<text class="axis-label" x="'+lx.toFixed(2)+'" y="'+(H-10)+'" text-anchor="middle">'+monthShort(rangeMonths[i])+'</text>');
+    }
+
+    // hover hit columns (one per month band)
+    for (var i=0;i<n;i++){
+      var hx0 = padL + i*bandFull;
+      svgParts.push('<rect data-idx="'+i+'" class="hit-col" x="'+hx0.toFixed(2)+'" y="'+padT+'" width="'+bandFull.toFixed(2)+'" height="'+plotH+'" fill="transparent"/>');
+    }
+    svgParts.push('<line class="crosshair" id="'+chartId+'Crosshair" x1="0" x2="0" y1="'+padT+'" y2="'+(padT+plotH)+'"/>');
+    svgParts.push('</svg>');
+
+    chartWrap.innerHTML = svgParts.join('');
+    var tooltip = document.createElement('div');
+    tooltip.className='tooltip';
+    chartWrap.appendChild(tooltip);
+    var svgEl = chartWrap.querySelector('svg');
+    var crosshair = document.getElementById(chartId+'Crosshair');
+
+    Array.prototype.forEach.call(chartWrap.querySelectorAll('.hit-col'), function(el){
+      el.addEventListener('mousemove', function(){
+        var idx = parseInt(el.getAttribute('data-idx'),10);
+        var d = stackData[idx];
+        var cx = bandX0(idx)+barW/2;
+        crosshair.style.opacity = 1;
+        crosshair.setAttribute('x1', cx); crosshair.setAttribute('x2', cx);
+
+        var rowsHtml = series.map(function(k,si){
+          var label = k==='__other__' ? 'Остальные' : k;
+          var val = d.vals[si], share = d.shares[si];
+          if (val<=0) return null;
+          return '<div class="tooltip__row"><span class="tooltip__swatch" style="background:'+colorFor(si)+'"></span>'+
+            label.slice(0,28)+': '+(metric==='revenue'?fmtRub(val):fmtNum(val)+' шт.')+' ('+fmtPct(share)+')</div>';
+        }).filter(Boolean).join('');
+        tooltip.innerHTML = '<b>'+monthFull(d.m)+'</b>'+rowsHtml;
+        var rect = svgEl.getBoundingClientRect();
+        var wrapRect = chartWrap.getBoundingClientRect();
+        var px = rect.left - wrapRect.left + (cx/W)*rect.width;
+        tooltip.style.left = Math.min(Math.max(px-90,0), wrapRect.width-230)+'px';
+        tooltip.style.top = '2px';
+        tooltip.style.opacity = 1;
+      });
+      el.addEventListener('mouseleave', function(){
+        crosshair.style.opacity = 0;
+        tooltip.style.opacity = 0;
+      });
+    });
+
+    if (legendWrap){
+      legendWrap.innerHTML = series.map(function(k,si){
+        var label = k==='__other__' ? 'Остальные' : k;
+        return '<div class="legend__item"><span class="legend__swatch" style="background:'+colorFor(si)+'"></span>'+label+'</div>';
+      }).join('');
+    }
+    if (noteEl){
+      noteEl.textContent = skippedCount>0 ? ('+ '+skippedCount+' мес. с продажами < '+MIN_MONTH_TICKETS+' билетов не показаны') : '';
+    }
+  }
+
+  // ---------- fullscreen modal ----------
+  var modalOpenFor = null;
+  var modalOverlay = document.getElementById('modalOverlay');
+  var modalTitle = document.getElementById('modalTitle');
+  var modalBody = document.getElementById('modalBody');
+
+  function showModal(){ modalOverlay.hidden = false; document.body.style.overflow='hidden'; }
+  function closeModal(){ modalOverlay.hidden = true; document.body.style.overflow=''; modalOpenFor = null; modalBody.innerHTML=''; }
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', function(e){ if (e.target===modalOverlay) closeModal(); });
+  document.addEventListener('keydown', function(e){ if (e.key==='Escape' && !modalOverlay.hidden) closeModal(); });
+
+  document.getElementById('expandShare').addEventListener('click', function(){
+    modalOpenFor='share';
+    modalTitle.textContent = 'Динамика доли каналов во времени';
+    modalBody.innerHTML =
+      '<div class="pillgroup" id="modalShareMetric" style="margin-bottom:16px;"></div>'+
+      '<div class="chart-wrap chart-wrap--modal" id="modalShareChart"></div>'+
+      '<div class="legend" id="modalShareLegend"></div>'+
+      '<p class="note" id="modalShareSkipNote" style="margin-top:12px;"></p>';
+    buildSharePills('modalShareMetric');
+    renderShareChart('modalShareChart','modalShareLegend','modalShareSkipNote');
+    showModal();
+  });
+  document.getElementById('expandReturns').addEventListener('click', function(){
+    modalOpenFor='returns';
+    modalTitle.textContent = 'Доля возвратов по каналам';
+    modalBody.innerHTML = '<div class="rlist rlist--modal" id="modalReturnsList"></div>';
+    renderReturns('modalReturnsList');
+    showModal();
+  });
+
+  // ---------- caveats ----------
+  function renderCaveats(){
+    var wrap = document.getElementById('caveats');
+    var notes = [
+      'Тестовые данные исключены: площадка «Арена тест» / организатор «Тестовый организатор» — '+DATA.meta.test_excluded_tickets+' билетов из '+DATA.meta.total_tickets_raw+' ('+DATA.meta.test_excluded_performances+' мероприятий).',
+      '«Продано» — билет не аннулирован, не пригласительный, заказ оплачен (orders.status 10 или 15); тестовые мероприятия и служебные покупатели (кроме покупок в день мероприятия) исключены. «Доля возвратов» объединяет возвраты и сгоревшие брони: билет аннулирован (deleted=true), и либо по его заказу есть платёж payments.type=refund (возврат), либо такого платежа нет (сгоревшая бронь) — статус заказа при этом не проверяется, так как после полного возврата заказ может иметь тот же статус −5, что и у сгоревшей брони. Для портфельного разреза детальное разделение возврат/сгоревшая бронь не выводится — оно есть в Дашборде по мероприятию «Анализ продажи билетов».',
+      '«Каналы продаж» объединены по ключевым словам в названии дистрибьютора, а не показаны по сырому sale_channel_id: один и тот же партнёр заводится в билетной системе отдельной записью на каждое мероприятие (например, «Яндекс Афиша МузТВ», «Яндекс Афиша LIDA», «Блок3 Яндекс Афиша» и ещё десяток вариантов — всё это один и тот же партнёр «Яндекс Афиша»). Так же объединены Кассир.ру, Концерт.ру, Red Kassa, М.Видео. Без такого объединения портфельный разрез давал бы около 140 несравнимых строк вместо 12 осмысленных каналов.',
+      '«Прямые продажи (сайт Арены)» — самая широкая группа: сюда объединены билеты без внешнего дистрибьютора вообще, записи с названиями вида «…на сайте livearena.ru», технические записи-заглушки «Пустой дистрибьютор для …» и встраиваемые виджеты на собственном сайте площадки/организатора (EMIN шлюз сайт EMIN, LIDA widget и т.п.) — во всех этих случаях выручка не уходит внешнему агрегатору-посреднику. За всю историю данных это крупнейший «канал» портфеля.',
+      '«Без канала (нет данных)» — проданные билеты без sale_channel_id и без признака пригласительного — вероятно, продажи мимо стандартных виджетов/касс. Выделены отдельно, не смешаны с прямыми продажами.',
+      'Пригласительные билеты ('+fmtNum(DATA.meta.invite_total)+', '+fmtPct(DATA.meta.invite_total/DATA.meta.tickets_in_scope)+' от всех билетов) не привязаны ни к какому каналу продажи по построению системы — исключены из всех блоков этого дашборда, их доля показана здесь справочно.',
+      'Блок «Доля возвратов по каналам» считается по всей истории данных и не зависит от фильтров периода/типа билета — задан минимальный объём в 300 оформленных билетов на канал, иначе доля возврата считается на слишком маленькой выборке и даёт шум.',
+      'На графике «Динамика доли каналов» показаны топ-4 канала (вместо топ-8 в блоке выше) — при 100%-стеке большее число цветов сложно различать одновременно; остальные каналы объединены в «Остальные».'
+    ];
+    wrap.innerHTML = notes.map(function(n){ return '<p class="note">— '+n+'</p>'; }).join('');
+  }
+
+  function render(){
+    renderKPI();
+    renderChannelList();
+    renderReturns('returnsList');
+    buildSharePills('shareMetric');
+    renderShareChart('shareChart','shareLegend','shareSkipNote');
+    renderCaveats();
+  }
+
+  document.getElementById('genDate').textContent = DATA.meta.generated;
+  render();
+})();
+
+</script>
+
+</body>
+</html>
