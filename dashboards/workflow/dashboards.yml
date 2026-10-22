@@ -1,0 +1,107 @@
+name: Расчёт дашбордов Аренамастер
+
+# Каждая новая выгрузка БС (коммит, менявший csv/, около 09:00 МСК) → расчёт данных дашбордов →
+# публикация в Gorkarta/am-reports (dashboards/data/). Дашборды портала при открытии берут данные оттуда.
+# Только чтение bs-reports: workflow ничего в нём не меняет. Подробности — am-reports/dashboards/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths: ['csv/**']
+  workflow_dispatch:
+
+concurrency:
+  group: dashboards
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Репозиторий bs-reports (только чтение)
+        uses: actions/checkout@v4
+        with:
+          path: bs
+          fetch-depth: 1
+
+      - name: Репозиторий am-reports (скрипты и результат)
+        uses: actions/checkout@v4
+        with:
+          repository: Gorkarta/am-reports
+          ref: main
+          path: am
+          token: ${{ secrets.AM_REPORTS_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Зависимости
+        run: pip install -q 'pandas==3.0.5' 'numpy==2.5.3'
+
+      - name: Свежая и прошлая выгрузки
+        id: ex
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # свежая — последний коммит, менявший csv/; прошлая — последний такой коммит до начала дня свежей (МСК)
+          read -r CUR CUR_ISO < <(gh api "repos/$REPO/commits?path=csv&per_page=1" --jq '.[0] | "\(.sha) \(.commit.committer.date)"')
+          CUR_T=$(TZ=Europe/Moscow date -d "$CUR_ISO" '+%Y-%m-%d %H:%M')
+          DAY=$(TZ=Europe/Moscow date -d "$CUR_ISO" '+%Y-%m-%d')
+          START=$(TZ=Europe/Moscow date -d "$DAY 00:00" -u '+%Y-%m-%dT%H:%M:%SZ')
+          PREV=$(gh api "repos/$REPO/commits?path=csv&until=$START&per_page=1" --jq '.[0].sha // empty')
+          mkdir -p data/cur data/prev
+          git -C bs fetch --depth=1 origin "$CUR"
+          git -C bs archive "$CUR" csv | tar -x -C data/cur --strip-components=1
+          if [ -n "$PREV" ]; then
+            git -C bs fetch --depth=1 origin "$PREV"
+            PREV_ISO=$(git -C bs log -1 --format=%cI "$PREV")
+            PREV_T=$(TZ=Europe/Moscow date -d "$PREV_ISO" '+%Y-%m-%d %H:%M')
+            git -C bs archive "$PREV" csv | tar -x -C data/prev --strip-components=1
+          else
+            echo "::warning::Прошлая выгрузка не найдена — изменения за период будут нулевыми"
+            cp -r data/cur/. data/prev/
+            PREV_T="$CUR_T"
+          fi
+          echo "cur_t=$CUR_T" >> "$GITHUB_OUTPUT"
+          echo "prev_t=$PREV_T" >> "$GITHUB_OUTPUT"
+          echo "Свежая выгрузка: $CUR_T ($CUR); прошлая: $PREV_T (${PREV:-нет})"
+
+      - name: Расчёт
+        id: build
+        run: |
+          set +e
+          python3 -s am/dashboards/src/build_all.py \
+            --src am/dashboards/src --cur data/cur --prev data/prev \
+            --cur-time "${{ steps.ex.outputs.cur_t }}" --prev-time "${{ steps.ex.outputs.prev_t }}" --am am
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Публикация в am-reports
+        run: |
+          cd am
+          git config user.name "dashboards-bot"
+          git config user.email "dashboards-bot@users.noreply.github.com"
+          git add -A dashboards/data dashboards/archive
+          if git diff --cached --quiet; then echo "Изменений нет"; exit 0; fi
+          DAY="${{ steps.ex.outputs.cur_t }}"
+          git commit -m "Дашборды: данные по выгрузке ${DAY:8:2}.${DAY:5:2}.${DAY:0:4} ${DAY:11:5}"
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((i * 5))
+          done
+          echo "::error::Не удалось отправить результат в am-reports"; exit 1
+
+      - name: Итог расчёта
+        run: |
+          CODE="${{ steps.build.outputs.code }}"
+          if [ "$CODE" = "2" ]; then
+            echo "::error::«Портфель мероприятий» не обновлён: найдены подозрительные мероприятия. Нужен ответ владельца (am-reports/dashboards/data/blocked.json, exclusions.json), затем запустить workflow вручную."
+            exit 1
+          fi
+          [ "$CODE" = "0" ] || { echo "::error::Расчёт завершился с ошибкой (код $CODE) — смотрите шаг «Расчёт»"; exit 1; }
