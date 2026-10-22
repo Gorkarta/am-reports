@@ -185,7 +185,7 @@ hdr=f"""<div class=brand>Аренамастер · Аналитика</div>
 <h1 style='font-size:18px'>Сводка продаж — {ART}</h1>
 <div class=meta>Мероприятие: {C.get('event_line','')}<br>Выгрузка БС: <b>{C['exp_date']}</b> · последний билет: <b>{C['last_dm_hm']}</b><br>До концерта: <b>{C['days_left']} дн.</b></div>{('<div class=meta style="color:#ffb238;font-weight:600;margin-top:4px">'+C['quota_note']+'</div>') if C.get('quota_note') else ''}"""
 if PN:
-    k1=f"<div class=k><div class=l>Реализовано билетов</div><div class=v>{n_(real)}</div><div class=s>план-прогноз на сегодня {n_(int(PN+0.5))} · <span class={cl(real/PN-1)}>{sg(real/PN-1)}</span><br><span class=sub>продано {n_(T['n']+RET)} · пригл. {INV}<br>{('возвраты −'+str(RET)) if RET else 'возвратов нет'}</span></div></div>"
+    k1=f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(T['n'])}</div><div class=s><span class=sub>реализовано {n_(real)} (+{INV}{C.get('inv_extra','')} пригл.)<br>возвраты {RET}</span><br><br>план-прогноз на сегодня {n_(int(PN+0.5))} · <span class={cl(real/PN-1)}>{sg(real/PN-1)}</span></div></div>"
     k2=f"<div class=k><div class=l>Выручка</div><div class=v>{mln(T['r'])} ₽</div><div class=s>план-прогноз на сегодня {mln1(PR)} · <span class={cl(T['r']/PR-1)}>{sg(T['r']/PR-1)}</span></div></div>"
 else:
     k1=f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(T['n'])}</div><div class=s><span class=sub>реализовано {n_(real)} (+{INV}{C.get('inv_extra','')} пригл.)<br>возвраты {RET}</span><br><br>плана нет (базовая выгрузка)</div></div>"
