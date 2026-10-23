@@ -227,6 +227,8 @@
   <div class="year-controls">
     <p class="year-label">Год проведения мероприятия</p>
     <div class="pillgroup" id="yearPillGroup"></div>
+    <p class="year-label" style="margin-top:14px">Статус мероприятия</p>
+    <div class="pillgroup" id="whenPillGroup"></div>
   </div>
 
   <div class="controls">
@@ -313,9 +315,10 @@ function currentEvent(){ return DATA.find(e => e.event_id === state.eventId); }
 
 function eventYear(e){ return e.date.slice(0,4); }
 
+function whenOk(e){ return state.when === 'all' || e.status === state.when; }
 function buildYearCounts(){
   const counts = {};
-  DATA.forEach(e=>{ const y = eventYear(e); counts[y] = (counts[y]||0)+1; });
+  DATA.filter(e=>!state || whenOk(e)).forEach(e=>{ const y = eventYear(e); counts[y] = (counts[y]||0)+1; });
   return counts;
 }
 
@@ -323,7 +326,7 @@ function renderYearPills(){
   const wrap = document.getElementById('yearPillGroup');
   const counts = buildYearCounts();
   const years = Object.keys(counts).sort();
-  const total = DATA.length;
+  const total = DATA.filter(whenOk).length;
   const allBtn = `<button class="pill${state.year==='all'?' active':''}" data-year="all">Все годы <span class="count">· ${total}</span></button>`;
   const yearBtns = years.map(y=>`<button class="pill${state.year===y?' active':''}" data-year="${y}">${y} <span class="count">· ${counts[y]}</span></button>`).join('');
   wrap.innerHTML = allBtn + yearBtns;
@@ -332,10 +335,27 @@ function renderYearPills(){
       if (btn.dataset.year === state.year) return;
       state.year = btn.dataset.year;
       renderYearPills();
+      renderWhenPills();
       buildEventOptions();
       render();
     });
   });
+}
+
+function renderWhenPills(){
+  const wrap = document.getElementById('whenPillGroup');
+  const inYear = DATA.filter(e => state.year === 'all' || eventYear(e) === state.year);
+  const n = k => k === 'all' ? inYear.length : inYear.filter(e => e.status === k).length;
+  const items = [['all','Все'],['past','Прошедшие'],['upcoming','В продаже (ещё не состоялись)']];
+  wrap.innerHTML = items.map(([k,t]) => `<button class="pill${state.when===k?' active':''}" data-when="${k}">${t} <span class="count">· ${n(k)}</span></button>`).join('');
+  wrap.querySelectorAll('.pill').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.dataset.when === state.when) return;
+    state.when = btn.dataset.when;
+    renderYearPills();
+    renderWhenPills();
+    buildEventOptions();
+    render();
+  }));
 }
 
 function buildEventOptions(){
@@ -343,6 +363,7 @@ function buildEventOptions(){
   sel.innerHTML = '';
   let evs = [...DATA];
   if (state.year !== 'all') evs = evs.filter(e => eventYear(e) === state.year);
+  evs = evs.filter(whenOk);
   evs.sort((a,b) => a.show_name.localeCompare(b.show_name, 'ru'));
   for (const e of evs){
     const opt = document.createElement('option');
@@ -395,7 +416,7 @@ function renderMeta(e){
   const el = document.getElementById('metaRow');
   const badge = e.status === 'past'
     ? '<span class="badge badge--past">Прошедшее</span>'
-    : '<span class="badge badge--upcoming">Будущее</span>';
+    : '<span class="badge badge--upcoming">В продаже</span>';
   el.innerHTML = `
     <span class="meta-row__item"><span class="meta-row__label">Дата и время проведения:</span><b>${fmtEventDate(e.date)}</b></span>
     <span class="meta-row__item"><span class="meta-row__label">Наименование:</span><span>${e.venue_name}${e.hall_name ? ' · ' + e.hall_name : ''}</span></span>
@@ -649,12 +670,14 @@ function render(){
 }
 
 function boot(initial){
+  state = { when: (initial && initial.when) || 'all' };
   const counts = buildYearCounts();
   const years = Object.keys(counts).sort();
   let defaultYear = years[0];
   years.forEach(y => { if (counts[y] > counts[defaultYear]) defaultYear = y; });
-  state = Object.assign({ eventId: null, typeFilter: 'all', paceWindow: 30, year: defaultYear }, initial || {});
+  state = Object.assign({ eventId: null, typeFilter: 'all', paceWindow: 30, year: defaultYear, when: 'all' }, initial || {});
   renderYearPills();
+  renderWhenPills();
   buildEventOptions();
   document.getElementById('eventSelect').value = state.eventId;
   document.getElementById('eventSelect').addEventListener('change', () => { state.eventId = document.getElementById('eventSelect').value; render(); });
@@ -662,7 +685,7 @@ function boot(initial){
 }
 
 if (window.claude?.hot){
-  window.claude.hot.snapshot(() => ({ eventId: state.eventId, typeFilter: state.typeFilter, paceWindow: state.paceWindow, year: state.year }));
+  window.claude.hot.snapshot(() => ({ eventId: state.eventId, typeFilter: state.typeFilter, paceWindow: state.paceWindow, year: state.year, when: state.when }));
   window.claude.hot.ready ? window.claude.hot.ready(boot) : boot(window.claude.hot.data);
 } else {
   boot();
