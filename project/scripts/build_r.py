@@ -1,3 +1,4 @@
+import re
 import json, math, sys
 C=json.load(open(sys.argv[1]))
 d=json.load(open(C['data']))
@@ -177,7 +178,10 @@ pg(2,f"""{banner(2,'Новости и изменения',C['period'])}
 <h3>Всплески и события</h3>{bul(EV[:ES])}""")
 _re=EV[ES:];_ec=C.get('ev_chunk',4)
 for _i in range(0,len(_re),_ec): pg(2,f"""<h3 style='margin-top:0'>Всплески и события (продолжение)</h3>{bul(_re[_i:_i+_ec])}""")
-pg(2,f"""<h3 style='margin-top:0'>Переоценка и вывод в продажу</h3><div class=meta style="margin:-4px 0 8px">{C['change_when']}</div>{lst([it or "<div class=it><div class=a>Цены и состав мест в продаже без изменений</div></div>"])}""")
+_pcs=[x for x in re.split(r"(?=<div class=it>|<div class=zh>)",it) if x]
+_chs=[_pcs[i:i+13] for i in range(0,len(_pcs),13)] or [[]]
+for _i,_c in enumerate(_chs):
+  pg(2,f"""<h3 style='margin-top:0'>Переоценка и вывод в продажу{' (продолжение)' if _i else ''}</h3>"""+("" if _i else f"""<div class=meta style="margin:-4px 0 8px">{C['change_when']}</div>""")+lst([''.join(_c) or "<div class=it><div class=a>Цены и состав мест в продаже без изменений</div></div>"]))
 pg(2,f"""<h3 style='margin-top:0'>Что это изменило</h3>{bul(C['changed'])}
 <div class=call><b>Без изменений:</b> {C['unchanged']}</div><div class=foot>{C['news_foot']}</div>""")
 def upr(rows):
