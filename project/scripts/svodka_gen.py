@@ -28,6 +28,7 @@ def enrich(t):
 N=enrich(N)
 perf=pd.read_csv(CUR+'performances.csv',dtype=str,usecols=['id','hall_schema_id']);hs=perf[perf.id==PERF].hall_schema_id.iloc[0]
 HK={'92':'89'}.get(str(hs),str(hs))
+SC={'90':0.56}.get(HK,1.0)
 b=pd.read_csv(CUR+'hall_schema_bindings.csv',usecols=['hall_schema_id','seat_id','x','y']);b=b[b.hall_schema_id==int(hs)]
 m=b.merge(seats,left_on='seat_id',right_on='id').merge(sec,left_on='sector_id',right_on='sid')
 m=m[~((m.x==0)&(m.y==0))&~m.sname.str.startswith('Ложа')].copy()
@@ -47,7 +48,7 @@ if HK=='78':
     dm=m.sname=='Танцпол'
     m=m[~dm].copy()
 ZC={'Фан-зона':'#ffb238','Ложи':'#a29cb3','Танцпол':'#ff6a4d','Партер':'#8b5cf6','Лаунж и боксы':'#2dd4bf','Секторы 100':'#5b8def','Балконы':'#34d399','Секторы 300':'#ff4fa3'}
-def hull(pts,pad=120):
+def hull(pts,pad=120*SC):
     a=np.array(pts);ang=np.linspace(0,2*np.pi,9)[:-1];q=np.vstack([a+[pad*np.cos(t),pad*np.sin(t)] for t in ang]);return q[ConvexHull(q).vertices]
 H={}
 for n,g in m.groupby('sname'):
@@ -69,7 +70,7 @@ if len(Nm):
     orders=Nm.groupby('order_id').agg(src=('src','first'),col=('col','first'),n=('price','size'),r=('price','sum'),x=('x','mean'),y=('y','mean'),ts=('ts','min'),zone=('sname','first')).reset_index()
 else:
     orders=pd.DataFrame(columns=['order_id','src','col','n','r','x','y','ts','zone'])
-K=8.2*.55
+K=8.2*.55*SC
 orders['rad']=orders.r.astype(float).pow(.5)*K
 orders=orders.sort_values('r',ascending=False).reset_index(drop=True);orders['ox']=orders.x;orders['oy']=orders.y;orders['dir']=0
 for i in range(len(orders)):
@@ -82,14 +83,14 @@ for i in range(len(orders)):
                 orders.loc[i,'ox']=orders.ox[j]+sgn*(orders.rad[i]+orders.rad[j])*1.75*1.0;orders.loc[i,'dir']=sgn;hit=True;break
         if not hit:break
 W=364
-VB={'90':'-360 6700 19900 10900'}.get(HK,'-100 -200 19900 18500')
+VB={'90':'3900 7400 11200 10150'}.get(HK,'-100 -200 19900 18500')
 def svgwrap(inner):return f"<svg viewBox='{VB}' width='{W}'>{inner}</svg>"
-cont="".join(f"<polygon points='{' '.join(f'{x:.0f},{y:.0f}' for x,y in p)}' fill='none' stroke='{ZC[zone_of[n]]}' stroke-width='38' stroke-opacity='.75' stroke-linejoin='round'/>" for n,p in H.items())
-dots="".join(f"<circle cx='{r.x}' cy='{r.y}' r='{44 if r.seat_id in soldA else 22}' fill='{'#8a84a3' if r.seat_id in soldA else '#2c2938'}'/>" for r in m.itertuples())
+cont="".join(f"<polygon points='{' '.join(f'{x:.0f},{y:.0f}' for x,y in p)}' fill='none' stroke='{ZC[zone_of[n]]}' stroke-width='{38*SC:.0f}' stroke-opacity='.75' stroke-linejoin='round'/>" for n,p in H.items())
+dots="".join(f"<circle cx='{r.x}' cy='{r.y}' r='{(44 if r.seat_id in soldA else 22)*SC:.1f}' fill='{'#8a84a3' if r.seat_id in soldA else '#2c2938'}'/>" for r in m.itertuples())
 ZL=dict(ZC);ZL['Лаунж']=ZC['Лаунж и боксы']
 bub="";lbl=""
 fmtk=lambda v:(str(round(v/1000,1)).replace('.0','').replace('.',','))+' тыс.'
-circ=[(r.ox,r.oy,r.rad*1.75+60) for r in orders.itertuples()]
+circ=[(r.ox,r.oy,r.rad*1.75+60*SC) for r in orders.itertuples()]
 placed=[]
 def hit(rect,ex=None):
     x0,y0,x1,y1=rect
@@ -99,36 +100,36 @@ def hit(rect,ex=None):
         if not(x1<p[0] or x0>p[2] or y1<p[1] or y0>p[3]):return True
     return False
 for r in orders.itertuples():
-    bub+=f"<circle cx='{r.ox:.0f}' cy='{r.oy:.0f}' r='{r.rad*1.75:.0f}' fill='none' stroke='{r.col}' stroke-width='60' opacity='.6'/><circle cx='{r.ox:.0f}' cy='{r.oy:.0f}' r='{r.rad:.0f}' fill='{r.col}'/>"
+    bub+=f"<circle cx='{r.ox:.0f}' cy='{r.oy:.0f}' r='{r.rad*1.75:.0f}' fill='none' stroke='{r.col}' stroke-width='{60*SC:.0f}' opacity='.6'/><circle cx='{r.ox:.0f}' cy='{r.oy:.0f}' r='{r.rad:.0f}' fill='{r.col}'/>"
 for r in orders.sort_values('r',ascending=False).itertuples():
-    t=fmtk(r.r);w=len(t)*300;h=520;R=r.rad*1.75+140
-    cands=[(r.ox+R,r.oy+190,'start'),(r.ox-R,r.oy+190,'end'),(r.ox,r.oy-R,'middle'),(r.ox,r.oy+R+h,'middle')]
+    t=fmtk(r.r);w=len(t)*300*SC;h=520*SC;R=r.rad*1.75+140*SC
+    cands=[(r.ox+R,r.oy+190*SC,'start'),(r.ox-R,r.oy+190*SC,'end'),(r.ox,r.oy-R,'middle'),(r.ox,r.oy+R+h,'middle')]
     R2=R*1.9
-    cands+= [(r.ox+R2,r.oy+190,'start'),(r.ox-R2,r.oy+190,'end'),(r.ox+R*.6,r.oy-R2,'start'),(r.ox-R*.6,r.oy-R2,'end'),(r.ox+R*.6,r.oy+R2+h,'start'),(r.ox-R*.6,r.oy+R2+h,'end')]
+    cands+= [(r.ox+R2,r.oy+190*SC,'start'),(r.ox-R2,r.oy+190*SC,'end'),(r.ox+R*.6,r.oy-R2,'start'),(r.ox-R*.6,r.oy-R2,'end'),(r.ox+R*.6,r.oy+R2+h,'start'),(r.ox-R*.6,r.oy+R2+h,'end')]
     if r.dir<0:cands=[cands[1],cands[0]]+cands[2:]
     pick=None
     for x,y,a in cands:
-        x0=x if a=='start' else (x-w if a=='end' else x-w/2);rect=(x0,y-h,x0+w,y+60)
+        x0=x if a=='start' else (x-w if a=='end' else x-w/2);rect=(x0,y-h,x0+w,y+60*SC)
         if not hit(rect):pick=(x,y,a,rect);break
     if pick is None:
-        x,y,a=cands[0];x0=x;rect=(x0,y-h,x0+w,y+60);pick=(x,y,a,rect)
-    placed.append(pick[3]);lbl+=f"<text x='{pick[0]:.0f}' y='{pick[1]:.0f}' fill='#fff' font-size='520' font-weight='800' text-anchor='{pick[2]}' font-family='Inter'>{t}</text>"
+        x,y,a=cands[0];x0=x;rect=(x0,y-h,x0+w,y+60*SC);pick=(x,y,a,rect)
+    placed.append(pick[3]);lbl+=f"<text x='{pick[0]:.0f}' y='{pick[1]:.0f}' fill='#fff' font-size='{520*SC:.0f}' font-weight='800' text-anchor='{pick[2]}' font-family='Inter'>{t}</text>"
 zl=""
 ZPS={'89':{'Танцпол':[(9600,16650)],'Партер':[(9600,12100)],'Секторы 100':[(9600,7700),(9600,9300),(6300,10300),(12900,10300)],'Секторы 300':[(9600,1000)],'Балконы':[(2000,12700),(17300,12700)],'Лаунж':[(3300,16700),(16100,16700)]},
      '84':{'Танцпол':[(9650,12480)],'Фан-зона':[(9650,15700)],'Секторы 100':[(9650,5700)],'Секторы 300':[(9600,900)],'Балконы':[(1300,12900),(17800,12900)],'Лаунж':[(3300,16700),(16100,16700)]},
      '78':{'Танцпол':[(9650,12480)],'Секторы 100':[(9650,5700)],'Секторы 300':[(9600,900)],'Балконы':[(1300,12900),(17800,12900)],'Лаунж':[(3300,16700),(16100,16700)]},
-     '90':{'Партер':[(9600,17000)],'Секторы 100':[(9600,12400),(9600,11100)],'Секторы 300':[(9600,7900)],'Балконы':[(3600,12900),(15600,12900)],'Лаунж':[(5600,16900),(13600,16900)]},
+     '90':{'Партер':[(9570,15100)],'Секторы 100':[(9600,11800),(9600,10700)],'Секторы 300':[(9600,7900)],'Балконы':[(4800,14350),(14000,14350)],'Лаунж':[(6450,16950),(12300,17050)]},
      '48':{'Танцпол':[(9607,12300)],'Секторы 100':[(9600,7700),(9600,8700)],'Секторы 300':[(9600,900)],'Балконы':[(1300,12500),(17800,12500)],'Лаунж':[(3300,16700),(16100,16700)]}}
 ZP=ZPS.get(HK,ZPS['89'])
 for z,ps in ZP.items():
     for (x,y) in ps:
-        w=len(z)*330;rect=(x-w/2,y-500,x+w/2,y+100)
+        w=len(z)*330*SC;rect=(x-w/2,y-500*SC,x+w/2,y+100*SC)
         if z in('Балконы','Лаунж') or not hit(rect):
-            zl+=f"<text x='{x}' y='{y}' fill='{ZL[z]}' font-size='480' font-weight='700' text-anchor='middle' font-family='Inter' opacity='.95'>{z}</text>"
+            zl+=f"<text x='{x}' y='{y}' fill='{ZL[z]}' font-size='{480*SC:.0f}' font-weight='700' text-anchor='middle' font-family='Inter' opacity='.95'>{z}</text>"
             if z not in('Балконы','Лаунж'):break
 svg=svgwrap(cont+dots+bub+lbl+zl)
 dot=lambda c,t:f"<span><b style='color:{c}'>●</b> {t}</span> "
-leg="".join(f"<div style='text-align:center'><svg width='{2*math.sqrt(v)*K*1.75*.0189+6:.0f}' height='{2*math.sqrt(v)*K*1.75*.0189+6:.0f}'><circle cx='50%' cy='50%' r='{math.sqrt(v)*K*1.75*.0189:.1f}' fill='none' stroke='#a29cb3' stroke-width='1.6' opacity='.7'/><circle cx='50%' cy='50%' r='{math.sqrt(v)*K*.0189:.1f}' fill='#a29cb3'/></svg><div style='color:#a29cb3;font-size:10.5px;white-space:nowrap'>{v//1000} тыс. ₽</div></div>" for v in C.get('legend',(4000,10000,16000)))
+leg="".join(f"<div style='text-align:center'><svg width='{2*math.sqrt(v)*K*1.75*(.0189/SC)+6:.0f}' height='{2*math.sqrt(v)*K*1.75*(.0189/SC)+6:.0f}'><circle cx='50%' cy='50%' r='{math.sqrt(v)*K*1.75*(.0189/SC):.1f}' fill='none' stroke='#a29cb3' stroke-width='1.6' opacity='.7'/><circle cx='50%' cy='50%' r='{math.sqrt(v)*K*(.0189/SC):.1f}' fill='#a29cb3'/></svg><div style='color:#a29cb3;font-size:10.5px;white-space:nowrap'>{v//1000} тыс. ₽</div></div>" for v in C.get('legend',(4000,10000,16000)))
 mapcard=f"<div class=card style='padding:10px;margin-bottom:6px'>{svg}<div class=lg style='margin-top:6px'>{dot('#ffcc00','ЯАфиша')}{dot('#2dd4bf','Кассир')}{dot('#f9423a','LA')}{dot('#8a84a3','продано ранее')}</div><div style='display:flex;gap:16px;align-items:flex-end;margin-top:6px'><div class=lg style='margin:0 0 14px'>Размер точки — сумма заказа (1 точка = 1 заказ):</div>{leg}</div></div>"
 pc_=lambda x:(f'{x:.2f}').replace('.',',')
 n_=lambda x:f"{int(round(x)):,}".replace(',',' ')
@@ -188,7 +189,7 @@ if PN:
     k1=f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(T['n'])}</div><div class=s><span class=sub>реализовано {n_(real)} (+{INV}{C.get('inv_extra','')} пригл.)<br>возвраты {RET}</span><br><br>план-прогноз на сегодня {n_(int(PN+0.5))} · <span class={cl(real/PN-1)}>{sg(real/PN-1)}</span></div></div>"
     k2=f"<div class=k><div class=l>Выручка</div><div class=v>{mln(T['r'])} ₽</div><div class=s>план-прогноз на сегодня {mln1(PR)} · <span class={cl(T['r']/PR-1)}>{sg(T['r']/PR-1)}</span></div></div>"
 else:
-    k1=f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(T['n'])}</div><div class=s><span class=sub>реализовано {n_(real)} (+{INV}{C.get('inv_extra','')} пригл.)<br>возвраты {RET}</span><br><br>плана нет (базовая выгрузка)</div></div>"
+    k1=f"<div class=k><div class=l>Продано билетов</div><div class=v>{n_(T['n'])}</div><div class=s><span class=sub>реализовано {n_(real)} (+{INV}{C.get('inv_extra','')} пригл.)<br>возвраты {RET}</span><br><br>{C.get('noplan_text','плана нет (базовая выгрузка)')}</div></div>"
     k2=f"<div class=k><div class=l>Выручка</div><div class=v>{mln(T['r'])} ₽</div><div class=s>цель по выручке не задана<br><span class=sub>возвраты −{n_(RB.price.astype(float).sum())} ₽ ({RET} бил.)</span></div></div>"
 k3=(f"<div class=k><div class=l>Ср. цена продаж</div><div class=v>{n_(T['avg'])} ₽</div><div class=s>нужна {n_(NEED)} · <span class={cl(T['avg']/NEED-1)}>{sg(T['avg']/NEED-1)}</span></div></div>" if NEED else
     f"<div class=k><div class=l>Ср. цена продаж</div><div class=v>{n_(T['avg'])} ₽</div><div class=s>нужная не задана</div></div>")
