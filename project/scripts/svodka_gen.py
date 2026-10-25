@@ -221,9 +221,22 @@ CAP=690;pages_l=[];cur=[];used=0
 for z,html,h in units:
     if used+h>CAP and cur:pages_l.append(''.join(cur));cur=[];used=0
     cur.append(html);used+=h
-tail=foot+bs_block;th=40+len(C['sv_bs_rows'])*62+40
-if used+th>CAP and cur:pages_l.append(''.join(cur));cur=[];used=0
-cur.append(tail);pages_l.append(''.join(cur))
+BR=C['sv_bs_rows'];RH=62
+def bsb(rows,cont=False):
+    rr="".join(f"<div class=row><div>{a}<div class=sub>{s_}</div></div><div class=r>{r_}</div></div>" for a,s_,r_ in rows)
+    return f"<div class=sh>Изменения в БС <span>{C['sv_bs_when']}{' (продолжение)' if cont else ''}</span></div><div class=card>{rr}</div>"
+th=40+len(BR)*RH+40
+if th+60<=CAP and used+th>CAP and cur:pages_l.append(''.join(cur));cur=[];used=0
+if th+60>CAP:
+    cur.append(foot);used+=60
+    room=max(int((CAP-used-80)//RH),0)
+    if room<3:pages_l.append(''.join(cur));cur=[];used=0;room=int((CAP-80)//RH)
+    first=BR[:room];rest=BR[room:]
+    cur.append(bsb(first));pages_l.append(''.join(cur));cur=[]
+    while rest:
+        k=int((CAP-80)//RH);cur=[bsb(rest[:k],True)];rest=rest[k:];pages_l.append(''.join(cur))
+else:
+    cur.append(foot+bs_block);pages_l.append(''.join(cur))
 rep_pages=[chg+mapcard]+pages_l
 json.dump(rep_pages,open(C['out_pages'],'w'),ensure_ascii=False)
 css=open('style_final.txt').read()+'<style>'+open('svodka.css').read()+'</style>'+(__import__('plans_block').CSS if C.get('min_t') else '');F=open('fonts.txt').read()
