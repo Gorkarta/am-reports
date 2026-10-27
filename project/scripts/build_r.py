@@ -108,6 +108,13 @@ for zn in ['Партер','Ложи','Лаунж и премиум-боксы','
     sub=r['secs'].replace('Премиум бокс ','бокс ')
     it+=f"<div class=it><div><div class=a>{k} {w}</div>{'' if sub==zn else '<div class=sm>'+sub+'</div>'}</div><div class=rt>{txt}</div></div>"
 def lst(items): return "<div class=list>"+''.join(items)+"</div>"
+def bsplit(items,lim=1500):
+  out=[];cur=[];n_=0
+  for x in items:
+    if cur and n_+len(x)>lim: out.append(cur);cur=[];n_=0
+    cur.append(x);n_+=len(x)
+  if cur: out.append(cur)
+  return out
 def bul(items): return "<ul>"+''.join(f"<li>{x}</li>" for x in items)+"</ul>"
 def banner(num,title,sub): return f"<div class=sec-lbl>Раздел {num}</div><h2 style='font-size:19px;margin-bottom:4px'>{title}</h2><div class=meta style='margin-bottom:12px'>{sub}</div>"
 P={1:[],2:[],3:[]}
@@ -146,7 +153,7 @@ for w in W+[['Итого',real,PLAN_N,T['r'],PLAN_R]]:
   wit+=f"<div class=it><div><div class=a>{w[0]}</div><div class=sm>{rv}</div></div><div class=rt><b>{w[1]}</b> <span class=sm>из {n(w[2])}</span>{tv}</div></div>"
 for _p in json.load(open(C['svodka'])): pg(1,_p)
 pg(1,f"""<h3 style='margin-top:0'>{C.get('weeks_title','Темп по неделям')}</h3>
-<div class=card><div class=t>{C.get('weeks_cap','Билетов за неделю: факт и план')}</div>{wbars((85 if len(W)>6 else 115) if len(W)>5 else 170)}<div class=lg><i style="background:#5b8def"></i>План<i style="background:#ffb238"></i>Факт{('<i style="background:#34d399"></i>План-минимум' if MINT else '')}</div></div>
+<div class=card><div class=t>{C.get('weeks_cap','Билетов за неделю: факт и план')}</div>{wbars((70 if len(W)>6 else 115) if len(W)>5 else 170)}<div class=lg><i style="background:#5b8def"></i>План<i style="background:#ffb238"></i>Факт{('<i style="background:#34d399"></i>План-минимум' if MINT else '')}</div></div>
 <style>#wk .it{{padding:4px 12px}}</style><div class=list id=wk style='margin-top:8px'>{wit}</div><div class=foot style='margin-top:8px'>{C['weeks_foot']}</div>""")
 pg(1,f"""<h3 style='margin-top:0'>Продажи по дням</h3>
 <div class=card><div class=t>Билетов в день, {C['days_caption']}</div>{daily('n')}</div>
@@ -166,7 +173,7 @@ for hdr,rows in blocks:
     if cnt>=PER-1: flush()
     take=rows[i:i+PER-cnt-1]; cur.append(hdr if i==0 else hdr.replace('</div>',' (продолжение)</div>',1)); cur+=take; cnt+=1+len(take); i+=len(take)
 flush()
-ch=[gs[:11]]+[gs[k:k+12] for k in range(11,len(gs),12)]
+ch=[gs[:10]]+[gs[k:k+11] for k in range(10,len(gs),11)]
 for i,c in enumerate(ch):
   pg(1,("<h3 style='margin-top:0'>Продажи по ценовым группам</h3><div class=meta style='margin:-4px 0 8px'>В среднем по залу продано "+pc(AVG,1)+"% мест в продаже</div>" if i==0 else "<h3 style='margin-top:0'>Продажи по ценовым группам (продолжение)</h3>")+lst(c)+(f"<div class=foot>«×N к среднему» — во сколько раз доля проданных мест группы выше или ниже средней по залу. Метка: быстро — ×1,5 и выше, в среднем — ×0,67–1,5, медленно — ниже ×0,67; «новая» — группа создана после прошлой выгрузки. «(было …)» — цена мест группы в прошлой выгрузке. «За 7 дней» — {C['d7']}.</div>" if i==len(ch)-1 else ''))
 N_=d['new']
@@ -182,8 +189,10 @@ _pcs=[x for x in re.split(r"(?=<div class=it>|<div class=zh>)",it) if x]
 _chs=[_pcs[i:i+13] for i in range(0,len(_pcs),13)] or [[]]
 for _i,_c in enumerate(_chs):
   pg(2,f"""<h3 style='margin-top:0'>Переоценка и вывод в продажу{' (продолжение)' if _i else ''}</h3>"""+("" if _i else f"""<div class=meta style="margin:-4px 0 8px">{C['change_when']}</div>""")+lst([''.join(_c) or "<div class=it><div class=a>Цены и состав мест в продаже без изменений</div></div>"]))
-pg(2,f"""<h3 style='margin-top:0'>Что это изменило</h3>{bul(C['changed'])}
-<div class=call><b>Без изменений:</b> {C['unchanged']}</div><div class=foot>{C['news_foot']}</div>""")
+_cg=bsplit(C['changed'],1500)
+for _i,_c in enumerate(_cg):
+  _last=_i==len(_cg)-1
+  pg(2,f"""<h3 style='margin-top:0'>Что это изменило{' (продолжение)' if _i else ''}</h3>{bul(_c)}"""+(f"""<div class=call><b>Без изменений:</b> {C['unchanged']}</div><div class=foot>{C['news_foot']}</div>""" if _last else ''))
 def upr(rows):
   o=''
   for a,b,sv,c,e in rows:
@@ -206,11 +215,15 @@ else:
   pg(3,f"""<h3 style='margin-top:0'>Держать</h3>{bul(C['hold'])}<h3>Снизить</h3>{bul(C['lower'])}<h3>Возможности</h3>{bul(C['opps'])}""")
 if C.get('attn_sep'):
   pg(3,f"""<h3 style='margin-top:0'>Слабые места</h3>{bul(C['weak'])}""")
-  pg(3,f"""<h3 style='margin-top:0'>На что обратить внимание</h3>{bul(C['attn'])}\n<div class=foot>Результат — предложение: цены утверждает менеджер и вносит в БС вручную.</div>""")
+  _ag=bsplit(C['attn'],1250)
+  for _i,_c in enumerate(_ag):
+    pg(3,f"""<h3 style='margin-top:0'>На что обратить внимание{' (продолжение)' if _i else ''}</h3>{bul(_c)}"""+("\n<div class=foot>Результат — предложение: цены утверждает менеджер и вносит в БС вручную.</div>" if _i==len(_ag)-1 else ''))
 else:
   pg(3,f"""<h3 style='margin-top:0'>Слабые места</h3>{bul(C['weak'])}<h3>На что обратить внимание</h3>{bul(C['attn'])}
 <div class=foot>Результат — предложение: цены утверждает менеджер и вносит в БС вручную.</div>""")
-pg(3,f"""<h3 style='margin-top:0'>Применение методики</h3>{bul(C.get('method',[]))}""")
+_mg=bsplit(C.get('method',[]),2300) or [[]]
+for _i,_c in enumerate(_mg):
+  pg(3,f"""<h3 style='margin-top:0'>Применение методики{' (продолжение)' if _i else ''}</h3>{bul(_c)}""")
 pages=P[1]+P[2]+P[3]; NN=len(pages)
 style=style.replace('</style>','.p1 .k{padding:8px 11px}.p1 .k .v{font-size:19px;margin:2px 0}.p1 h1{font-size:20px;margin:6px 0}.p1 .card{padding:9px 12px}.p1 .call{padding:9px 12px;font-size:12.5px}.p1 .kpis{gap:6px;margin-top:0}</style>')
 html=f"<!doctype html><html lang=ru><head><meta charset=utf-8><title>{C['title']}</title>{fonts}{style}</head><body>"+''.join(f"<div class='page{' p1' if i==0 else ''}'>{p}<div class=pn>{i+1} / {NN}</div></div>" for i,p in enumerate(pages))+"</body></html>"
