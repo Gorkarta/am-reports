@@ -4,13 +4,14 @@ pc=lambda x,d=0:(f"{x:.{d}f}").replace('.',',')
 F=lambda x:x.strftime('%d.%m')
 sgp=lambda x:('+' if x>=0 else '−')+str(abs(round(x*100)))+'%'
 TODAY=dt.date(2026,11,2)
-c101=json.load(open('curve101.json'))
+c101=json.load(open('curve101.json'));r101=json.load(open('curve101_r.json'))  # Методика v1.7, п. 2.1: билеты и выручка — отдельные кривые
 EV=dt.date(2026,12,26)
 share=lambda day:c101[str((EV-day).days)] if (EV-day).days<=101 else 0
+share_r=lambda day:r101[str((EV-day).days)] if (EV-day).days<=101 else 0
 d=json.load(open('data85.json'));T=d['total'];AU=d['au'];RU=d['rules']
 GT,GR=7000,60000000;MT,MR=5830,50000000
 daily={r['d']:(r['n'],r['r']) for r in d['daily']}
-mon=dt.date(2026,9,16);mon=mon-dt.timedelta(days=mon.weekday());rows=[];prev=0
+mon=dt.date(2026,9,16);mon=mon-dt.timedelta(days=mon.weekday());rows=[];prev=0;prev_r=0
 while mon<=TODAY:
     end=min(mon+dt.timedelta(days=6),TODAY)
     nn=sum(v[0] for k,v in daily.items() if mon<=dt.date.fromisoformat(k)<=end);rr=sum(v[1] for k,v in daily.items() if mon<=dt.date.fromisoformat(k)<=end)
@@ -19,8 +20,9 @@ while mon<=TODAY:
     if mon<=dt.date(2026,10,13)<=end:nn+=239
     if mon<=dt.date(2026,10,20)<=end:nn+=15
     cum=share(end)*GT;pn=cum-prev;prev=cum
-    rows.append(dict(mon=mon,end=end,n=nn,pn=pn,r=rr,pr=pn*GR/GT));mon+=dt.timedelta(days=7)
-PN=share(TODAY)*GT;PR=PN*GR/GT
+    cum_r=share_r(end)*GR;pr=cum_r-prev_r;prev_r=cum_r
+    rows.append(dict(mon=mon,end=end,n=nn,pn=pn,r=rr,pr=pr));mon+=dt.timedelta(days=7)
+PN=share(TODAY)*GT;PR=share_r(TODAY)*GR
 wk_rows=[]
 for i,w in enumerate(rows):
     last=i==len(rows)-1

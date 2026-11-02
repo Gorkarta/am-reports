@@ -1,8 +1,10 @@
 import json,datetime as dt
 TODAY=dt.date(2026,11,2)
 c101=json.load(open('curve101.json'));c61=json.load(open('curve61.json'));c76=json.load(open('curve76.json'))
+# Методика v1.7, п. 2.1: выручка — по своей кривой (curve.py пишет curve{W}_r.json)
+r101=json.load(open('curve101_r.json'));r61=json.load(open('curve61_r.json'));r76=json.load(open('curve76_r.json'))
 share=lambda c,W,ev,day:c[str(max((ev-day).days,0))] if (ev-day).days<=W else 0
-PN=share(c101,101,dt.date(2026,12,26),TODAY)*7000;PR=PN*60e6/7000
+PN=share(c101,101,dt.date(2026,12,26),TODAY)*7000;PR=share(r101,101,dt.date(2026,12,26),TODAY)*60e6
 def pl(n,a,b,c):
     return f"{n} {a if n%10==1 and n%100!=11 else (b if 2<=n%10<=4 and not 12<=n%100<=14 else c)}"
 fm=lambda v:f"{int(v):,}".replace(',',' ')
@@ -27,7 +29,7 @@ SM=dict(min_t=5830,min_r=50000000,prev="prev/",cur="cur/",data="data85.json",pre
  out_html="svodka_85.html",out_png="svodka_85.png",event_line="Стас Михайлов, 26.12.2026, Live Арена, Основной зал, id 85",artist="Стас Михайлов",
  inv_line="Новых пригласительных за период нет (всего 337); поправка планов 0 билетов / 0 ₽.")
 GTz=1021;GRz=2700000
-PNz=share(c61,61,dt.date(2026,10,29),TODAY)*GTz;PRz=PNz*GRz/GTz
+PNz=share(c61,61,dt.date(2026,10,29),TODAY)*GTz;PRz=share(r61,61,dt.date(2026,10,29),TODAY)*GRz
 SZ=dict(prev="prev/",cur="cur/",data="data78.json",prev_data="data78_prev.json",perf=78,GT=GTz,GR=GRz,
  exp_date="02.11.2026",last_dm_hm="29.10 17:47",days_left=0,inv=385,ret=54,plan_n=PNz,plan_r=round(PRz),
  period_sv="29.10 17:47 → 29.10 17:47",sv_bs_when="изменений нет",
@@ -37,7 +39,7 @@ SZ=dict(prev="prev/",cur="cur/",data="data78.json",prev_data="data78_prev.json",
  out_html="svodka_78.html",out_png="svodka_78.png",event_line="Жара Медиа Премия 2026, 29.10.2026, Live Арена, Основной зал, id 78",artist="Жара Медиа Премия 2026",
  inv_line="Новых пригласительных за период нет (всего 385). Концерт состоялся 29.10.2026 (до него 0 дн.). Цель квоты 1 021 билет / 2,7 млн ₽ (без изменений).")
 GTb=10834;GRb=59730000
-PNb=share(c76,76,dt.date(2026,11,24),TODAY)*GTb;PRb=PNb*GRb/GTb
+PNb=share(c76,76,dt.date(2026,11,24),TODAY)*GTb;PRb=share(r76,76,dt.date(2026,11,24),TODAY)*GRb
 SB=dict(prev="prev/",cur="cur/",data="data83.json",prev_data="data83_prev.json",perf=83,GT=GTb,GR=GRb,
  exp_date="02.11.2026",last_dm_hm="02.11 08:38",days_left=22,inv=309,ret=469,plan_n=PNb,plan_r=round(PRb),
  period_sv="01.11 08:04 → 02.11 08:38",sv_bs_when="изменений нет",
