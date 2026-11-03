@@ -1,5 +1,5 @@
 import pandas as pd,sys
-P=sys.argv[1];D='/tmp/w/cur/';Pv='/tmp/w/prev/'
+P=sys.argv[1];D='cur/';Pv='prev/'
 cols=['id','performance_id','order_id','seat_id','price','is_invite','deleted','created_at']
 t=pd.read_csv(D+'tickets.csv',dtype=str,usecols=cols);tp=pd.read_csv(Pv+'tickets.csv',dtype=str,usecols=['id'])
 o=pd.read_csv(D+'orders.csv',dtype=str,usecols=['id','status','viewer_id','sold_at'])

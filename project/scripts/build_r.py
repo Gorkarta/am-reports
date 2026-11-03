@@ -221,7 +221,7 @@ if C.get('attn_sep'):
 else:
   pg(3,f"""<h3 style='margin-top:0'>Слабые места</h3>{bul(C['weak'])}<h3>На что обратить внимание</h3>{bul(C['attn'])}
 <div class=foot>Результат — предложение: цены утверждает менеджер и вносит в БС вручную.</div>""")
-_mg=bsplit(C.get('method',[]),2300) or [[]]
+_mg=bsplit(C.get('method',[]),1300) or [[]]
 for _i,_c in enumerate(_mg):
   pg(3,f"""<h3 style='margin-top:0'>Применение методики{' (продолжение)' if _i else ''}</h3>{bul(_c)}""")
 pages=P[1]+P[2]+P[3]; NN=len(pages)
