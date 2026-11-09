@@ -6,8 +6,23 @@ from playwright.async_api import async_playwright
 C=json.load(open(sys.argv[1]));PRE=C['prev'];CUR=C['cur'];PERF=str(C.get('perf',85))
 d=json.load(open(C['data']));dp=json.load(open(C['prev_data']))
 SRC={'19':('ЯАфиша','#ffcc00'),'38':('Кассир.ру','#2dd4bf')}
+# Источник заказа = канал продаж билета (sale_channel_id → sale_channels.name); с 09.11.2026 (Инструкция, п. 4.16).
+# Покупатели-аккаунты партнёров (viewer 19, 38) определяют источник сами; остальное — по каналу. Порядок = приоритет совпадения.
+CH=[('яндекс','ЯАфиша','#ffcc00'),('кассир.ру','Кассир.ру','#2dd4bf'),('livearena','LA','#f9423a'),('организатор','Сайт организатора','#8b5cf6'),
+    ('концерт','Концерт.ру','#5b8def'),('афиша','Афиша.ру','#ff4fa3'),('red kassa','Red Kassa','#34d399'),('редкасса','Red Kassa','#34d399')]
+CH_EXTRA=['#ffb238','#ff6a4d','#5ad1ff','#c084fc','#a3e635','#f43f5e']  # для каналов вне списка (виджет, М.Видео и т. п.)
+_extra={}
+def chan(viewer,name):
+    if viewer in SRC:return SRC[viewer]
+    n=str(name).lower() if isinstance(name,str) else ''
+    for k,lab,col in CH:
+        if k in n:return lab,col
+    if not n:return 'LA','#f9423a'   # канал не указан — собственные продажи
+    if name not in _extra:_extra[name]=(name,CH_EXTRA[len(_extra)%len(CH_EXTRA)])
+    return _extra[name]
+CHN=pd.read_csv(CUR+'sale_channels.csv',dtype=str,usecols=['id','name']).rename(columns={'id':'sale_channel_id','name':'chname'})
 def load(D):
-    t=pd.read_csv(D+'tickets.csv',dtype=str,usecols=['id','order_id','seat_id','performance_id','price','deleted','is_invite','refunded_at','created_at'])
+    t=pd.read_csv(D+'tickets.csv',dtype=str,usecols=['id','order_id','seat_id','performance_id','price','deleted','is_invite','refunded_at','created_at','sale_channel_id'])
     o=pd.read_csv(D+'orders.csv',dtype=str,usecols=['id','status','viewer_id'])
     t=t[(t.performance_id==PERF)&(t.deleted!='t')&(t.is_invite!='t')].merge(o,left_on='order_id',right_on='id',suffixes=('','_o'))
     t=t[~t.viewer_id.isin(['2608','10'])&t.status.isin(['10','15'])].copy()
@@ -23,7 +38,8 @@ seats['id']=seats.id.astype(int)
 def enrich(t):
     t=t.merge(seats,left_on='seat_id',right_on='id',suffixes=('','_s')).merge(sec,left_on='sector_id',right_on='sid')
     t['ts']=pd.to_datetime(t.created_at,format='mixed',utc=True)+pd.Timedelta(hours=3)
-    t['src']=t.viewer_id.map(lambda e:SRC.get(e,('LA','#f9423a'))[0]);t['col']=t.viewer_id.map(lambda e:SRC.get(e,('','#f9423a'))[1])
+    t=t.merge(CHN,on='sale_channel_id',how='left')
+    sc_=[chan(v,n) for v,n in zip(t.viewer_id,t.chname)];t['src']=[a for a,_ in sc_];t['col']=[b for _,b in sc_]
     return t
 N=enrich(N)
 perf=pd.read_csv(CUR+'performances.csv',dtype=str,usecols=['id','hall_schema_id']);hs=perf[perf.id==PERF].hall_schema_id.iloc[0]
@@ -130,7 +146,10 @@ for z,ps in ZP.items():
 svg=svgwrap(cont+dots+bub+lbl+zl)
 dot=lambda c,t:f"<span><b style='color:{c}'>●</b> {t}</span> "
 leg="".join(f"<div style='text-align:center'><svg width='{2*math.sqrt(v)*K*1.75*(.0189/SC)+6:.0f}' height='{2*math.sqrt(v)*K*1.75*(.0189/SC)+6:.0f}'><circle cx='50%' cy='50%' r='{math.sqrt(v)*K*1.75*(.0189/SC):.1f}' fill='none' stroke='#a29cb3' stroke-width='1.6' opacity='.7'/><circle cx='50%' cy='50%' r='{math.sqrt(v)*K*(.0189/SC):.1f}' fill='#a29cb3'/></svg><div style='color:#a29cb3;font-size:10.5px;white-space:nowrap'>{v//1000} тыс. ₽</div></div>" for v in C.get('legend',(4000,10000,16000)))
-mapcard=f"<div class=card style='padding:10px;margin-bottom:6px'>{svg}<div class=lg style='margin-top:6px'>{dot('#ffcc00','ЯАфиша')}{dot('#2dd4bf','Кассир')}{dot('#f9423a','LA')}{dot('#8a84a3','продано ранее')}</div><div style='display:flex;gap:16px;align-items:flex-end;margin-top:6px'><div class=lg style='margin:0 0 14px'>Размер точки — сумма заказа (1 точка = 1 заказ):</div>{leg}</div></div>"
+_order={l:i for i,(_,l,_c) in enumerate(CH)}
+_pres=sorted({(s,c) for s,c in zip(orders.src,orders.col)},key=lambda p:(_order.get(p[0],99),p[0]))
+LGD="".join(dot(c,s) for s,c in _pres)  # легенда — только каналы, у которых есть продажи за период
+mapcard=f"<div class=card style='padding:10px;margin-bottom:6px'>{svg}<div class=lg style='margin-top:6px'>{LGD}{dot('#8a84a3','продано ранее')}</div><div style='display:flex;gap:16px;align-items:flex-end;margin-top:6px'><div class=lg style='margin:0 0 14px'>Размер точки — сумма заказа (1 точка = 1 заказ):</div>{leg}</div></div>"
 pc_=lambda x:(f'{x:.2f}').replace('.',',')
 n_=lambda x:f"{int(round(x)):,}".replace(',',' ')
 def rng(a):

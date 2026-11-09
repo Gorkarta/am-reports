@@ -1,6 +1,14 @@
 import pandas as pd,sys
+# Источник заказа = канал продаж билета (Инструкция, п. 4.16, с 09.11.2026); viewer 19 / 38 — аккаунты ЯАфиши / Кассир.ру
+CH=[('яндекс','ЯАфиша'),('кассир.ру','Кассир.ру'),('livearena','LA'),('организатор','Сайт организатора'),('концерт','Концерт.ру'),('афиша','Афиша.ру'),('red kassa','Red Kassa'),('редкасса','Red Kassa')]
+def chan(v,name):
+    if v in ('19','38'):return {'19':'ЯАфиша','38':'Кассир.ру'}[v]
+    n=name.lower() if isinstance(name,str) else ''
+    for k,l in CH:
+        if k in n:return l
+    return name if n else 'LA'
 P=sys.argv[1];D='cur/';Pv='prev/'
-cols=['id','performance_id','order_id','seat_id','price','is_invite','deleted','created_at']
+cols=['id','performance_id','order_id','seat_id','price','is_invite','deleted','created_at','sale_channel_id']
 t=pd.read_csv(D+'tickets.csv',dtype=str,usecols=cols);tp=pd.read_csv(Pv+'tickets.csv',dtype=str,usecols=['id'])
 o=pd.read_csv(D+'orders.csv',dtype=str,usecols=['id','status','viewer_id','sold_at'])
 se=pd.read_csv(D+'seats.csv',dtype=str,usecols=['id','sector_id','row','num']) if True else None
@@ -8,7 +16,9 @@ sc=pd.read_csv(D+'sectors.csv',dtype=str,usecols=['id','name'])
 t=t[(t.performance_id==P)&(t.is_invite!='t')&(t.deleted!='t')&~t.id.isin(tp.id)].merge(o,left_on='order_id',right_on='id',suffixes=('','_o'))
 t=t[t.status.isin(['10','15'])&~t.viewer_id.isin(['2608','10'])]
 t=t.merge(se.rename(columns={'id':'seat_id'}),on='seat_id',how='left').merge(sc.rename(columns={'id':'sector_id','name':'sec'}),on='sector_id',how='left')
-t['src']=t.viewer_id.map({'19':'ЯАфиша','38':'Кассир.ру'}).fillna('LA')
+chn=pd.read_csv(D+'sale_channels.csv',dtype=str,usecols=['id','name']).rename(columns={'id':'sale_channel_id','name':'chname'})
+t=t.merge(chn,on='sale_channel_id',how='left')
+t['src']=[chan(v,n) for v,n in zip(t.viewer_id,t.chname)]
 t['ts']=pd.to_datetime(t.created_at,format='mixed',utc=True)+pd.Timedelta(hours=3);t['price']=t.price.astype(float)
 for oid,g in t.groupby('order_id'):
     parts=[]
