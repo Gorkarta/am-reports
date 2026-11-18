@@ -162,7 +162,7 @@ pg(1,f"""<h3 style='margin-top:0'>Продажи по дням</h3>
 pg(1,f"""<h3 style='margin-top:0'>По зонам зала</h3>
 <div class=card><div class=t>Реализация, % мест в продаже</div><svg viewBox='0 0 {Wd2} {H2}' width=100%>{zs}</svg></div>
 <div class=foot>Выведено — места групп билетов с назначенным тарифом (танцпол — по лимиту места). Доступно к покупке — выведено, в продаже, в канале продаж, не продано и не забронировано. Цены — текущие тарифы БС; проданные билеты отнесены к текущей группе места. Итого: {n(cap)} мест, {n(sold)} билетов, {n(T['r'])} ₽.</div>""")
-PER=13; cur=[]; cnt=0; first=[True]
+PER=C.get('per',13); cur=[]; cnt=0; first=[True]
 def flush():
   global cur,cnt
   if cur: pg(1,("<h3 style='margin-top:0'>Продажи по секторам</h3>" if first[0] else "<h3 style='margin-top:0'>Продажи по секторам (продолжение)</h3>")+lst(cur)); first[0]=False
@@ -209,8 +209,12 @@ for ci,chk in enumerate(chunks):
 if chunks and C.get('hold_with_raise',True):
   pg(3,f"""<h3 style='margin-top:0'>Снизить</h3>{bul(C['lower'])}<h3>Возможности</h3>{bul(C['opps'])}""")
 elif chunks:
-  pg(3,f"""<h3 style='margin-top:0'>Держать</h3>{bul(C['hold'])}<h3>Снизить</h3>{bul(C['lower'])}""")
-  pg(3,f"""<h3 style='margin-top:0'>Возможности</h3>{bul(C['opps'])}""")
+  if C.get('lower_with_opps'):
+    pg(3,f"""<h3 style='margin-top:0'>Держать</h3>{bul(C['hold'])}""")
+    pg(3,f"""<h3 style='margin-top:0'>Снизить</h3>{bul(C['lower'])}<h3>Возможности</h3>{bul(C['opps'])}""")
+  else:
+    pg(3,f"""<h3 style='margin-top:0'>Держать</h3>{bul(C['hold'])}<h3>Снизить</h3>{bul(C['lower'])}""")
+    pg(3,f"""<h3 style='margin-top:0'>Возможности</h3>{bul(C['opps'])}""")
 else:
   pg(3,f"""<h3 style='margin-top:0'>Держать</h3>{bul(C['hold'])}<h3>Снизить</h3>{bul(C['lower'])}<h3>Возможности</h3>{bul(C['opps'])}""")
 if C.get('attn_sep'):
