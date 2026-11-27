@@ -59,7 +59,10 @@ def calc(rev,snap):
                last_any=la.isoformat(' ')[:16] if la else None,last_site=ls.isoformat(' ')[:16] if ls else None,
                idle_days=(snap-la).total_seconds()/86400 if la else None,channels=chs)
         e['alert']=tot>0 and e['site']<0.5*tot
-        e['warn']=not e['alert'] and (la is None or e['idle_days']>3)
+        # без продаж с открытия: «обратить внимание», только если мероприятие заведено в БС больше 3 дней назад (правка 27.11.2026)
+        cr0=U(pr.get('created_at') or '')
+        e['opened']=cr0.isoformat(' ')[:16] if cr0 else None
+        e['warn']=not e['alert'] and ((la is None and (cr0 is None or (snap-cr0).total_seconds()/86400>3)) or (la is not None and e['idle_days']>3))
         if e['alert']:
             # момент закрытия: изменение настроек сайт-канала (привязка групп), иначе — последняя продажа на сайте
             sc=[c for c in chs if c['site']]
